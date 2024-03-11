@@ -2,7 +2,8 @@ from itertools import chain
 import datasets
 import gensim.models
 from tqdm import tqdm
-from .tokenise import tokenise
+
+from utils.tokenise import tokenise
 
 dataset = datasets.load_dataset("iwslt2017", "iwslt2017-en-zh")
 
