@@ -2,4 +2,4 @@ datasets
 gensim
 nltk
 tqdm
-
+transformers
