@@ -5,3 +5,7 @@ tqdm
 transformers[torch]
 torch
 ipykernel
+bert_score
+jieba
+rouge_chinese
+sacrebleu
