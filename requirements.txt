@@ -2,4 +2,6 @@ datasets
 gensim
 nltk
 tqdm
-transformers
+transformers[torch]
+torch
+ipykernel
