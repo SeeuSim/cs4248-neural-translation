@@ -35,7 +35,8 @@ train, test = dataset["train"], dataset["test"]
 
 def get_row_data(batch):
     return tokenizer(
-        list(map(lambda r: r['en'], batch['translation'])), return_special_tokens_mask=True
+        list(map(lambda r: r["en"], batch["translation"])),
+        return_special_tokens_mask=True,
     )
 
 
@@ -58,6 +59,7 @@ config = BertConfig(
 )
 
 model = BertForMaskedLM(config)
+model.resize_token_embeddings(len(tokenizer))
 
 """
 Training Utilities
@@ -81,6 +83,7 @@ training_args = TrainingArguments(
     load_best_model_at_end=True,
     save_total_limit=3,
     use_cpu=dev == "CPU",
+    dataloader_pin_memory=False,
 )
 
 # Step 6: Create the trainer and start training
@@ -92,11 +95,9 @@ trainer = Trainer(
     eval_dataset=test_dataset,
 )
 
-trainer._get_train_sampler = \
-    lambda: RandomSampler(
-        trainer.train_dataset, 
-        generator=torch.Generator(device)
-    )
+trainer._get_train_sampler = lambda: RandomSampler(
+    trainer.train_dataset, generator=torch.Generator(device)
+)
 
 """
 Actual Training
