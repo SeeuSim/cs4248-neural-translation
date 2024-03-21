@@ -2,6 +2,14 @@ import torch
 import torch.nn as nn
 from transformers import BertTokenizerFast, BertForMaskedLM
 
+"""
+NOTE: If you wish to use custom tokenisers, run 
+train.py with your tokeniser first.
+
+Our model is trained on a tokeniser with vocab size
+30522 and attention mask of max 300 tokens in length.
+"""
+
 class Embedding(nn.Module):
     def __init__(self, tokeniser=None):
         super().__init__()
@@ -9,15 +17,19 @@ class Embedding(nn.Module):
             self.tokeniser = BertTokenizerFast.from_pretrained('bert-base-uncased')
         else:
             self.tokeniser = tokeniser
+
+        # Has to be trained on tokeniser vocab size, else will not work.
         self.model = BertForMaskedLM.from_pretrained(
             '../models/bert-embed/bert', 
             output_hidden_states=True
         )
         self.model.eval()
+
     def forward(self, sentence: str):
-        input_ids = torch.tensor([sentence['input_ids']])
-        token_type_ids = torch.tensor([sentence['token_type_ids']])
-        attention_mask = torch.tensor([sentence['attention_mask']])
+        tokens = self.tokeniser(sentence)
+        input_ids = torch.tensor([tokens['input_ids']])
+        token_type_ids = torch.tensor([tokens['token_type_ids']])
+        attention_mask = torch.tensor([tokens['attention_mask']])
 
         with torch.no_grad():
             output = self.model(input_ids, attention_mask, token_type_ids)

@@ -81,7 +81,7 @@ output_path = "./models"
 
 config = BertConfig(
     vocab_size=vocab_size,
-    max_position_embeddings=300,  # or 512
+    max_position_embeddings=300,  # or 512 (sentence length for attn mask)
     # Add or modify other config parameters as needed
 )
 
