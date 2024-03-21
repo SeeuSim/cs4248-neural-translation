@@ -1,4 +1,5 @@
 import datasets
+import numpy as np
 import torch
 from torch.utils.data import RandomSampler
 from transformers import (
@@ -9,6 +10,33 @@ from transformers import (
     Trainer,
     TrainingArguments,
 )
+
+# Polyfill
+np.object = object
+
+IS_KAGGLE=False
+
+IS_CUSTOM_TOK=False
+
+if IS_KAGGLE:
+    from kaggle_secrets import UserSecretsClient
+    import wandb
+    user_secrets = UserSecretsClient()
+    _WANDB_API_KEY = user_secrets.get_secret("wandb_sec")
+    wandb.login(key=_WANDB_API_KEY)
+
+    # upload the dataset to Kaggle first
+    dataset = datasets.load_from_disk("/kaggle/input/iwslt-en-zh/ds/")
+else:
+    dataset = datasets.load_dataset("iwslt2017", "iwslt2017-en-zh")
+
+if IS_CUSTOM_TOK:
+    from ..utils import tokenise
+    # Add own class to output vocab indices, decode and attention mask
+    tokenizer = lambda sent: tokenise(sent)
+else:
+    tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
+    
 
 """
 Training Device
@@ -23,16 +51,15 @@ elif torch.cuda.is_available() and torch.cuda.device_count():
     device = torch.device("cuda")
 torch.set_default_device(device)
 
-tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
 
 """
 Dataset
 """
-dataset = datasets.load_dataset("iwslt2017", "iwslt2017-en-zh")
-
 train, test = dataset["train"], dataset["test"]
 
-
+"""
+Preprocess and tokenise
+"""
 def get_row_data(batch):
     return tokenizer(
         list(map(lambda r: r["en"], batch["translation"])),
@@ -59,6 +86,8 @@ config = BertConfig(
 )
 
 model = BertForMaskedLM(config)
+
+# Important: Tokenizer impls __len__ for output vocab size
 model.resize_token_embeddings(len(tokenizer))
 
 """
@@ -82,7 +111,7 @@ training_args = TrainingArguments(
     save_steps=1000,
     load_best_model_at_end=True,
     save_total_limit=3,
-    use_cpu=dev == "CPU",
+    use_cpu=dev=='CPU',
     dataloader_pin_memory=False,
 )
 
@@ -95,9 +124,11 @@ trainer = Trainer(
     eval_dataset=test_dataset,
 )
 
-trainer._get_train_sampler = lambda: RandomSampler(
-    trainer.train_dataset, generator=torch.Generator(device)
-)
+trainer._get_train_sampler = \
+    lambda: RandomSampler(
+        trainer.train_dataset, 
+        generator=torch.Generator(device)
+    )
 
 """
 Actual Training
