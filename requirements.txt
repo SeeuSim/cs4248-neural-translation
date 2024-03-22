@@ -9,3 +9,4 @@ bert_score
 jieba
 rouge_chinese
 sacrebleu
+sentencepiece
