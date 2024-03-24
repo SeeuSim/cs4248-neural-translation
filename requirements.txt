@@ -10,3 +10,4 @@ jieba
 rouge_chinese
 sacrebleu
 sentencepiece
+sacremoses
