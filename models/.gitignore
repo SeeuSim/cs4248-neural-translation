@@ -1,2 +1,5 @@
 **/*.pt
 **/*.safetensors
+**/*.bin
+**/*.spm
+**/*.pth
