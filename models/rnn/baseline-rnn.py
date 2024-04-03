@@ -24,33 +24,23 @@ train_data, valid_data, test_data = (
 )
 
 ################################ 1. MARIANTOKENIZER 
+
 print('tokenization step')
-model_name = "Helsinki-NLP/opus-mt-zh-en" # en-zh model doesn't work for decoding chi 
+model_name = "Helsinki-NLP/opus-mt-en-zh" # en-zh model doesn't work for decoding chi 
 tokenizer = MarianTokenizer.from_pretrained(model_name)
 
 # Max length 
-max_length_g = 50
+max_length_g = 10
 
 # Encode en and zh
-def encode_pair(pair, tokenizer, max_length):
-    # Encoding en
-    en_encoded = tokenizer(pair['translation']['en'],
-                           return_tensors="pt",
-                           padding="max_length",
-                           truncation=True,
-                           max_length=max_length)
-
-    # Encoding zh
-    zh_encoded = tokenizer(pair['translation']['zh'],
-                           return_tensors="pt",
-                           padding="max_length",
-                           truncation=True,
-                           max_length=max_length)
+def encode_pair(pair, tokenizer, max_length):    
+    tr = tokenizer(preprocess(pair['translation']['en']), text_target=preprocess(pair['translation']['zh']),truncation=True, return_tensors="pt",max_length=max_length_g, padding="max_length")
+    if (len(tr['input_ids']) != len(tr['labels'])):
+        print('mismatched')
 
     return {
-        "input_ids": en_encoded['input_ids'],
-        #"attention_mask": en_encoded['attention_mask'],
-        "labels": zh_encoded['input_ids']  
+        "input_ids": tr['input_ids'],
+        "labels": tr['labels']  
     }
 
 fn_kwargs = {
@@ -62,6 +52,7 @@ fn_kwargs = {
 train_tokens = train_data.map(encode_pair, fn_kwargs=fn_kwargs)
 valid_tokens = valid_data.map(encode_pair, fn_kwargs=fn_kwargs)
 test_tokens = test_data.map(encode_pair, fn_kwargs=fn_kwargs)
+
 
 ################################ 2. MODEL ARCHITECTURE 
 
@@ -176,15 +167,33 @@ def get_dataloader(data, batch_size, shuffle=False):
     return res_dataloader
 
 
-################################ 4. TRAINING (w/o plotting cos slow af) 
+################################ 4. TRAINING 
+
+def create_mask(input_tensor, pad_token_id):
+    # input_tensor shape [batch_size, sequence_length]
+    mask = (input_tensor != pad_token_id).float()
+    return mask
+
+def masked_loss(output, target, mask):
+    criterion = nn.CrossEntropyLoss(reduction='none')
+    loss = criterion(output.view(-1, output.size(-1)), target.view(-1))
+    loss = loss.view(mask.shape)  # Reshape loss to [batch_size, sequence_length]
+    masked_loss = loss * mask  # Apply mask
+    return masked_loss.sum() / mask.sum()  # Avg loss
 
 def train_epoch(dataloader, encoder, decoder, encoder_optimizer, decoder_optimizer, criterion, device):
     total_loss = 0
+    count = 0 
+    total = len(dataloader)
     for data in dataloader:
         #print(data['input_ids'].shape)
+        count += 1
         input_tensor = data['input_ids'].to(device)  # [batch size, seq length]
         target_tensor = data['labels'].to(device)  # [batch size, seq length]
         #print(input_tensor.shape) #torch.Size([32, 15])
+
+        mask = create_mask(target_tensor, tokenizer.pad_token_id).to(device)
+
         encoder_optimizer.zero_grad()
         decoder_optimizer.zero_grad()
         
@@ -193,20 +202,17 @@ def train_epoch(dataloader, encoder, decoder, encoder_optimizer, decoder_optimiz
         #print(encoder_hidden.shape) #torch.Size([1, 32, 128])
         #print(target_tensor.shape) # torch.Size([32, 15])
         decoder_outputs, _, _ = decoder(encoder_outputs, encoder_hidden, target_tensor)
+
         
-        loss = criterion(
-            decoder_outputs.view(-1, decoder_outputs.size(-1)),
-            target_tensor.view(-1)
-        )
+        loss = masked_loss(decoder_outputs, target_tensor, mask)
         
         loss.backward()
         encoder_optimizer.step()
         decoder_optimizer.step()
-
         total_loss += loss.item()
 
-    return total_loss / len(dataloader)
 
+    return total_loss / len(dataloader)
 
 def train(train_dataloader, encoder, decoder, n_epochs, learning_rate=0.001, print_every=2, plot_every=2, device='cuda'):
     start = time.time()
