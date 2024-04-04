@@ -24,7 +24,7 @@ torch.manual_seed(0)
 
 dataset = load_dataset("iwslt2017", "iwslt2017-en-zh")
 # model_name = "Helsinki-NLP/opus-mt-en-zh"
-# tokenizer = MarianTokenizer.from_pretrained(model_name)
+# tokeniser = MarianTokenizer.from_pretrained(model_name)
 
 tokeniser = BaseBPETokeniser(
     # en_model_file="../../tokenisation/sentencepiece_custom/en.model", 
@@ -34,8 +34,6 @@ tokeniser = BaseBPETokeniser(
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = tokeniser.get_special_ids('en')
-ZH_UNK_IDX, ZH_PAD_IDX, ZH_BOS_IDX, ZH_EOS_IDX = tokeniser.get_special_ids('zh')
 # UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = (
 #     tokenizer.unk_token_id,
 #     tokenizer.pad_token_id,
@@ -45,8 +43,10 @@ ZH_UNK_IDX, ZH_PAD_IDX, ZH_BOS_IDX, ZH_EOS_IDX = tokeniser.get_special_ids('zh')
 #     # from "config = AutoConfig.from_pretrained(model_name)", we see decoder_start_token_id = 65000 = pad_token_ide
 #     tokenizer.eos_token_id,
 # )
+UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = tokeniser.get_special_ids('en')
+ZH_UNK_IDX, ZH_PAD_IDX, ZH_BOS_IDX, ZH_EOS_IDX = tokeniser.get_special_ids('zh')
 
-print(UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX)  # prints 1 65000 65000 0
+# print(UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX)  # prints 1 65000 65000 0
 
 SRC_VOCAB_SIZE = len(tokeniser)
 TGT_VOCAB_SIZE = len(tokeniser)
