@@ -2,11 +2,15 @@ import sentencepiece as spm
 
 
 class LangTokeniser(object):
-    def __init__(self, lang: str, model_file = None):
-        self.model = spm.SentencePieceProcessor(model_file=model_file or f"./{lang}.model")
+    PAD_ID = 3  # Defined as sentencepiece custom token
+
+    def __init__(self, lang: str, model_file=None):
+        self.model = spm.SentencePieceProcessor(
+            model_file=model_file or f"./{lang}.model"
+        )
         self.special_ids = [
             self.model.unk_id(),
-            self.model.pad_id(),
+            LangTokeniser.PAD_ID,  # self.model.pad_id(), # this is -1 and may give errors.
             self.model.bos_id(),
             self.model.eos_id(),
         ]
@@ -23,7 +27,7 @@ class LangTokeniser(object):
         ids = self.model.encode(sent)
         if max_len is not None:
             if len(ids) < int(max_len):
-                ids = [*ids, *([self.model.pad_id()] * (int(max_len) - len(ids)))]
+                ids = [*ids, *([LangTokeniser.PAD_ID] * (int(max_len) - len(ids)))]
             elif len(ids) > int(max_len):
                 ids = ids[: int(max_len)]
         return ids
@@ -59,9 +63,9 @@ class BaseBPETokeniser(object):
 
     # Tokenise and truncate to max length of 512 for both.
     inputs = tokeniser(row['en'], text_target=row['zh'], max_len=512)
-    # { 
+    # {
     #     'input_ids': [...],       # The English IDs
-    #     'attention_mask': [...], 
+    #     'attention_mask': [...],
     #     'labels': [...]           # The Chinese IDs
     # }
 
@@ -70,7 +74,8 @@ class BaseBPETokeniser(object):
 
     ```
     """
-    def __init__(self, en_model_file = None, zh_model_file = None):
+
+    def __init__(self, en_model_file=None, zh_model_file=None):
         self.en_model = LangTokeniser("en", model_file=en_model_file)
         self.zh_model = LangTokeniser("zh", model_file=zh_model_file)
 
@@ -89,7 +94,7 @@ class BaseBPETokeniser(object):
             out["labels"] = self.zh_model.encode(
                 text_target, max_len=max_zh_len or max_len
             )
-            
+
         return out
 
     def encode_zh(self, sent: str, max_len=128):
@@ -100,11 +105,10 @@ class BaseBPETokeniser(object):
 
     def decode_src(self, labels: list[int]):
         return self.en_model.decode(labels)
-    
+
     def get_special_ids(self, lang: str):
         match lang:
-            case 'en':
+            case "en":
                 return self.en_model.get_special_ids()
-            case 'zh':
+            case "zh":
                 return self.zh_model.get_special_ids()
-    
