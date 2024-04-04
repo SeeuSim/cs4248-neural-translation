@@ -8,12 +8,12 @@ class LangTokeniser(object):
         self.model = spm.SentencePieceProcessor(
             model_file=model_file or f"./{lang}.model"
         )
-        self.special_ids = [
+        self.special_ids = (
             self.model.unk_id(),
             LangTokeniser.PAD_ID,  # self.model.pad_id(), # this is -1 and may give errors.
             self.model.bos_id(),
             self.model.eos_id(),
-        ]
+        )
 
     def __len__(self):
         return len(self.model)
@@ -45,12 +45,7 @@ class LangTokeniser(object):
         )
 
     def get_special_ids(self):
-        UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = (
-            self.model.unk_id(),
-            self.model.pad_id(),
-            self.model.bos_id(),
-            self.model.eos_id(),
-        )
+        UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = self.special_ids
         return (UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX)
 
 
