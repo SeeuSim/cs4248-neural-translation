@@ -14,6 +14,7 @@ from rouge_chinese import Rouge
 import jieba # you can use any other word cutting library
 from bert_score import score
 from transformers import MarianTokenizer
+from nltk.translate.bleu_score import sentence_bleu
 from torch.utils.tensorboard import SummaryWriter
 
 torch.manual_seed(0)
@@ -220,20 +221,25 @@ def train_epoch(model, optimizer):
     return losses / len(list(train_dataloader))
 
 def calc_bleu_scores(pred, tgt): 
-        r , c = tgt.rstrip(), pred.rstrip()
-        sacre_ref = [[r]] # list of list of text
-        sacre_c = [c] # list of text
-        scores = []
-        for i in range(1, 5):
-            bleu = BLEU(smooth_method='exp', tokenize='zh', max_ngram_order=i)
-            s = bleu.corpus_score(sacre_c, sacre_ref).score  
-            scores.append(s)
-        return sum(scores) / len(scores)
+    r , c = tgt.rstrip(), pred.rstrip()
+    r = [[r]] # list of list of text
+    c = [c] # list of text
+    
+    sacrebleu_scores = []
+    for i in range(1, 5):
+        bleu = BLEU(smooth_method='exp', tokenize='zh', max_ngram_order=i)
+        s = bleu.corpus_score(c, r).score  
+        sacrebleu_scores.append(s)
+    
+    sentence_bleu_score = sentence_bleu(r, c)
+    return sentence_bleu_score, sum(sacrebleu_scores) / len(sacrebleu_scores)
+
 
 def evaluate(model):
     model.eval()
     losses = 0
-    bleu = 0
+    nltk_bleu_score = 0
+    sacrebleu_score = 0
 
     # if want to eval on only a subset of the validation data
     # val_iter = load_dataset("iwslt2017", "iwslt2017-en-zh", split="validation[:128]")
@@ -251,7 +257,10 @@ def evaluate(model):
             print(f"translated: {pred}")
             print(f"target: {tgt}")
             debug = False
-        bleu += calc_bleu_scores(pred, tgt)
+        nltk, sacrebleu = calc_bleu_scores(pred, tgt)
+        # print(f"nltk: {nltk} vs sacreblue: {sacrebleu}")
+        nltk_bleu_score += nltk
+        sacrebleu_score += sacrebleu
 
     val_dataloader = DataLoader(val_iter, batch_size=BATCH_SIZE, collate_fn=collate_fn)
 
@@ -277,7 +286,7 @@ def evaluate(model):
         tgt_out = tgt[1:, :]
         loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
         losses += loss.item()
-    return losses / len(list(val_dataloader)), bleu / len(val_iter['translation'])
+    return losses / len(list(val_dataloader)), nltk_bleu_score / len(val_iter['translation']), sacrebleu_score / len(val_iter['translation'])
 
 
 # function to generate output sequence using greedy algorithm
@@ -363,13 +372,14 @@ if __name__ == "__main__":
         start_time = timer()
         train_loss = train_epoch(transformer, optimizer)
         end_time = timer()
-        val_loss, bleu_score = evaluate(transformer)
+        val_loss, nltk_bleu_score, sacrebleu_score = evaluate(transformer)
         writer.add_scalar("Loss/train", train_loss, epoch)
         writer.add_scalar("Loss/val", val_loss, epoch)
-        writer.add_scalar("Scores/bleu", bleu_score, epoch)
+        writer.add_scalar("Scores/nltksentencebleu", nltk_bleu_score, epoch)
+        writer.add_scalar("Scores/sacrebleu", sacrebleu_score, epoch)
         print(
             (
-                f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val loss: {val_loss:.3f}, Bleu Score: {bleu_score:.3f}, "
+                f"Epoch: {epoch}, Train loss: {train_loss:.3f}, Val loss: {val_loss:.3f}, NLTK Bleu Score: {nltk_bleu_score:.3f}, Sacrebleu Score: {sacrebleu_score}"
                 f"Epoch time = {(end_time - start_time):.3f}s"
             )
         )
@@ -385,45 +395,3 @@ if __name__ == "__main__":
                 'val_loss': val_loss,
                 'train_loss': train_loss
                 }, CHECKPOINT_PATH)
-    
-
-    def calc_bleu_scores(pred, tgt): 
-        r , c = tgt.rstrip(), pred.rstrip()
-        sacre_ref = [[r]] # list of list of text
-        sacre_c = [c] # list of text
-        scores = []
-        for i in range(1, 5):
-            bleu = BLEU(smooth_method='exp', tokenize='zh', max_ngram_order=i)
-            s = bleu.corpus_score(sacre_c, sacre_ref).score  
-            scores.append(s)
-        return sum(scores) / len(scores)
-
-
-        # # chrf 
-        # chrf = CHRF(word_order=0, beta=0, eps_smoothing=False)
-        # s = chrf.corpus_score(sacre_c, sacre_ref).score
-        # scores['CHRF'] = "{:.3f}".format(s)
-        # # chrf++ 
-        # chrf = CHRF(word_order=2, beta=0, eps_smoothing=False)
-        # s = chrf.corpus_score(sacre_c, sacre_ref).score
-        # scores['CHRF++'] = "{:.3f}".format(s)
-        # # ter 
-        # ter = TER(asian_support=True, normalized=True)
-        # s = ter.corpus_score(sacre_c, sacre_ref).score
-        # scores['TER'] = "{:.3f}".format(s)
-        # # rouge w jieba
-        # rouge_ref = ' '.join(jieba.cut(r))
-        # rouge_c = ' '.join(jieba.cut(c))
-        # rouge = Rouge()
-        # s = rouge.get_scores(rouge_c, rouge_ref)
-        # for m in s[0]:
-        #     for m2 in s[0][m]:
-        #         scores[f'{m}-{m2}'] = "{:.3f}".format(s[0][m][m2])
-        # # bert score 
-        # P, R, F = score(sacre_c, sacre_ref, lang='zh')
-        # P, R, F = P.item(), R.item(), F.item()
-        # scores['BERTSCORE-R']= "{:.3f}".format(R)
-        # scores['BERTSCORE-P']= "{:.3f}".format(P)
-        # scores['BERTSCORE-F']= "{:.3f}".format(F)
-
-        return pd.Series(scores)
