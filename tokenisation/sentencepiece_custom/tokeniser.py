@@ -2,8 +2,8 @@ import sentencepiece as spm
 
 
 class LangTokeniser(object):
-    def __init__(self, lang: str):
-        self.model = spm.SentencePieceProcessor(model_file=f"./{lang}.model")
+    def __init__(self, lang: str, model_file = None):
+        self.model = spm.SentencePieceProcessor(model_file=model_file or f"./{lang}.model")
         self.special_ids = [
             self.model.unk_id(),
             self.model.pad_id(),
@@ -14,17 +14,18 @@ class LangTokeniser(object):
     def __len__(self):
         return len(self.model)
 
-    def encode_batch(self, sents: list[str], pad_len=None, truncate_len=None):
-        return [self.encode(sent, pad_len, truncate_len) for sent in sents]
+    def encode_batch(self, sents: list[str], max_len=None):
+        return [self.encode(sent, max_len) for sent in sents]
 
-    def encode(self, sent: str | list[str], pad_len=None, truncate_len=None):
+    def encode(self, sent: str | list[str], max_len=None):
         if type(sent) == list:
-            return self.encode_batch(sent, pad_len, truncate_len)
+            return self.encode_batch(sent, max_len)
         ids = self.model.encode(sent)
-        if pad_len is not None and len(ids) < int(pad_len):
-            ids = [*ids, *([self.model.pad_id()] * (int(pad_len) - len(ids)))]
-        elif truncate_len is not None and len(ids) > int(truncate_len):
-            ids = ids[: int(truncate_len)]
+        if max_len is not None:
+            if len(ids) < int(max_len):
+                ids = [*ids, *([self.model.pad_id()] * (int(max_len) - len(ids)))]
+            elif len(ids) > int(max_len):
+                ids = ids[: int(max_len)]
         return ids
 
     def decode(self, ids: list[int] | list[list[int]]):
@@ -43,15 +44,57 @@ class LangTokeniser(object):
 
 
 class BaseBPETokeniser(object):
-    def __init__(self):
-        self.en_model = LangTokeniser('en')
-        self.zh_model = LangTokeniser('zh')
-    
+    """
+    The class to tokenise input English sentences, and decode output Chinese Vocab IDs.
+
+    Examples:
+    ```py
+    from tokenisation.sentencepiece_custom import BaseBPETokeniser
+
+    tokeniser = BaseBPETokeniser()
+    # or initialise with the model files in a separate path:
+    tokeniser = BaseBPETokeniser(en_model_file="/path/to/en.model", zh_model_file="/path/to/zh.model")
+
+    row = dataset[0]['translation']
+
+    # Tokenise and truncate to max length of 512 for both.
+    inputs = tokeniser(row['en'], text_target=row['zh'], max_len=512)
+    # { 
+    #     'input_ids': [...],       # The English IDs
+    #     'attention_mask': [...], 
+    #     'labels': [...]           # The Chinese IDs
+    # }
+
+    # should generate the Chinese tokens output.
+    translated = tokeniser.decode(ids)
+
+    ```
+    """
+    def __init__(self, en_model_file = None, zh_model_file = None):
+        self.en_model = LangTokeniser("en", model_file=en_model_file)
+        self.zh_model = LangTokeniser("zh", model_file=zh_model_file)
+
     def __len__(self):
         """
         Both the english and chinese tokenisers have the same length.
         """
         return len(self.en_model)
-    
-    def __call__(self, sent: str, text_target=None,):
-        pass
+
+    def __call__(self, sent: str, text_target=None, max_len=128, max_zh_len=None):
+        out = {
+            "input_ids": self.en_model.encode(sent, max_len=max_len),
+            "attention_mask": [1] * max_len,
+        }
+        if text_target:
+            out["labels"] = self.zh_model.encode(
+                text_target, max_len=max_zh_len or max_len
+            )
+
+    def encode_zh(self, sent: str, max_len=128):
+        return self.zh_model.encode(sent, max_len=max_len)
+
+    def decode(self, labels: list[int]):
+        return self.zh_model.decode(labels)
+
+    def decode_src(self, labels: list[int]):
+        return self.en_model.decode(labels)
