@@ -31,3 +31,12 @@ class Tokeniser(object):
         return self.model.decode(
             list(filter(lambda id: id >= 0 and id < len(self), ids))
         )
+
+    def get_special_ids(self):
+        UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = (
+            self.model.unk_id(),
+            self.model.pad_id(),
+            self.model.bos_id(),
+            self.model.eos_id()
+        )
+        return (UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX)
