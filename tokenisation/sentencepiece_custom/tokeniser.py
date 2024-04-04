@@ -1,7 +1,7 @@
 import sentencepiece as spm
 
 
-class Tokeniser(object):
+class LangTokeniser(object):
     def __init__(self, lang: str):
         self.model = spm.SentencePieceProcessor(model_file=f"./{lang}.model")
         self.special_ids = [
@@ -37,6 +37,21 @@ class Tokeniser(object):
             self.model.unk_id(),
             self.model.pad_id(),
             self.model.bos_id(),
-            self.model.eos_id()
+            self.model.eos_id(),
         )
         return (UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX)
+
+
+class BaseBPETokeniser(object):
+    def __init__(self):
+        self.en_model = LangTokeniser('en')
+        self.zh_model = LangTokeniser('zh')
+    
+    def __len__(self):
+        """
+        Both the english and chinese tokenisers have the same length.
+        """
+        return len(self.en_model)
+    
+    def __call__(self, sent: str, text_target=None,):
+        pass

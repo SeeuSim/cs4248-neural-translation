@@ -11,12 +11,13 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
 from sacrebleu.metrics import BLEU, CHRF, TER
 from rouge_chinese import Rouge
-import jieba # you can use any other word cutting library
+import jieba  # you can use any other word cutting library
 from bert_score import score
+
 # from transformers import MarianTokenizer
 from torch.utils.tensorboard import SummaryWriter
 
-from ...tokenisation.sentencepiece_custom.tokeniser import Tokeniser
+from ...tokenisation.sentencepiece_custom.tokeniser import LangTokeniser
 
 torch.manual_seed(0)
 
@@ -24,8 +25,8 @@ torch.manual_seed(0)
 dataset = load_dataset("iwslt2017", "iwslt2017-en-zh")
 # model_name = "Helsinki-NLP/opus-mt-en-zh"
 # tokenizer = MarianTokenizer.from_pretrained(model_name)
-en_tokeniser = Tokeniser('en')
-zh_tokeniser = Tokeniser('zh')
+en_tokeniser = LangTokeniser("en")
+zh_tokeniser = LangTokeniser("zh")
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
@@ -35,14 +36,14 @@ ZH_UNK_IDX, ZH_PAD_IDX, ZH_BOS_IDX, ZH_EOS_IDX = en_tokeniser.get_special_ids()
 # UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = (
 #     tokenizer.unk_token_id,
 #     tokenizer.pad_token_id,
-#     tokenizer.pad_token_id, 
-#     # according to source code, marian does not use bos_token (retrieves from config.decoder_start_token_id) 
+#     tokenizer.pad_token_id,
+#     # according to source code, marian does not use bos_token (retrieves from config.decoder_start_token_id)
 #     # - https://github.com/huggingface/transformers/blob/main/src/transformers/models/marian/tokenization_marian.py
 #     # from "config = AutoConfig.from_pretrained(model_name)", we see decoder_start_token_id = 65000 = pad_token_ide
 #     tokenizer.eos_token_id,
-# ) 
+# )
 
-print(UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX) # prints 1 65000 65000 0
+print(UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX)  # prints 1 65000 65000 0
 
 SRC_VOCAB_SIZE = len(en_tokeniser)
 TGT_VOCAB_SIZE = len(zh_tokeniser)
@@ -52,6 +53,7 @@ FFN_HID_DIM = 512
 BATCH_SIZE = 64
 NUM_ENCODER_LAYERS = 3
 NUM_DECODER_LAYERS = 3
+
 
 # helper Module that adds positional encoding to the token embedding to introduce a notion of word order.
 class PositionalEncoding(nn.Module):
@@ -167,12 +169,13 @@ def create_mask(src, tgt):
     tgt_padding_mask = (tgt == ZH_PAD_IDX).transpose(0, 1)
     return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
 
+
 def collate_fn(batch):
     src_batch, tgt_batch = [], []
     for row in batch:
         tr = row["translation"]
-        src_batch.appen(torch.tensor(en_tokeniser.encode(tr['en'])).to(DEVICE))
-        tgt_batch.appen(torch.tensor(zh_tokeniser.encode(tr['zh'])).to(DEVICE))
+        src_batch.appen(torch.tensor(en_tokeniser.encode(tr["en"])).to(DEVICE))
+        tgt_batch.appen(torch.tensor(zh_tokeniser.encode(tr["zh"])).to(DEVICE))
         # tr = tokenizer(tr["en"], text_target=tr["zh"])
         # src_batch.append(torch.tensor(tr["input_ids"]).to(DEVICE))
         # tgt_batch.append(torch.tensor(tr["labels"]).to(DEVICE)) # should we tokenize tgt with the zh-en tokenizer instead?
@@ -186,12 +189,12 @@ def train_epoch(model, optimizer):
     model.train()
     losses = 0
 
-    # if want to train on only a subset of the train 
+    # if want to train on only a subset of the train
     # train_iter = load_dataset("iwslt2017", "iwslt2017-en-zh", split="train[:128]")
 
     # if want to train on all the train data
     train_iter = dataset["train"]
-    
+
     train_dataloader = DataLoader(
         train_iter, batch_size=BATCH_SIZE, collate_fn=collate_fn
     )
@@ -227,16 +230,18 @@ def train_epoch(model, optimizer):
 
     return losses / len(list(train_dataloader))
 
-def calc_bleu_scores(pred, tgt): 
-        r , c = tgt.rstrip(), pred.rstrip()
-        sacre_ref = [[r]] # list of list of text
-        sacre_c = [c] # list of text
-        scores = []
-        for i in range(1, 5):
-            bleu = BLEU(smooth_method='exp', tokenize='zh', max_ngram_order=i)
-            s = bleu.corpus_score(sacre_c, sacre_ref).score  
-            scores.append(s)
-        return sum(scores) / len(scores)
+
+def calc_bleu_scores(pred, tgt):
+    r, c = tgt.rstrip(), pred.rstrip()
+    sacre_ref = [[r]]  # list of list of text
+    sacre_c = [c]  # list of text
+    scores = []
+    for i in range(1, 5):
+        bleu = BLEU(smooth_method="exp", tokenize="zh", max_ngram_order=i)
+        s = bleu.corpus_score(sacre_c, sacre_ref).score
+        scores.append(s)
+    return sum(scores) / len(scores)
+
 
 def evaluate(model):
     model.eval()
@@ -248,11 +253,11 @@ def evaluate(model):
 
     # if want to eval on all the validation data
     val_iter = dataset["validation"]
-    
+
     debug = True
-    for val in tqdm(val_iter['translation'], "eval - sacrebleu"):
-        src = val['en']
-        tgt = val['zh']
+    for val in tqdm(val_iter["translation"], "eval - sacrebleu"):
+        src = val["en"]
+        tgt = val["zh"]
         pred = translate(model, src)
         if debug:
             print(f"source: {src}")
@@ -285,7 +290,7 @@ def evaluate(model):
         tgt_out = tgt[1:, :]
         loss = loss_fn(logits.reshape(-1, logits.shape[-1]), tgt_out.reshape(-1))
         losses += loss.item()
-    return losses / len(list(val_dataloader)), bleu / len(val_iter['translation'])
+    return losses / len(list(val_dataloader)), bleu / len(val_iter["translation"])
 
 
 # function to generate output sequence using greedy algorithm
@@ -324,6 +329,7 @@ def translate(model: torch.nn.Module, src_sentence: str):
     ).flatten()
     return " ".join(zh_tokeniser.decode(list(tgt_tokens.cpu().numpy())))
 
+
 if __name__ == "__main__":
     transformer = Seq2SeqTransformer(
         NUM_ENCODER_LAYERS,
@@ -340,7 +346,6 @@ if __name__ == "__main__":
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
 
-
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=PAD_IDX)
 
     optimizer = torch.optim.Adam(
@@ -354,10 +359,9 @@ if __name__ == "__main__":
     if PATH != "":
         print(f"Loaded checkpoint from {PATH.split('/')[-1]}")
         checkpoint = torch.load(PATH, map_location=f"cuda:0")
-        transformer.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        LOADED_EPOCHS = checkpoint['epoch']
-
+        transformer.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        LOADED_EPOCHS = checkpoint["epoch"]
 
     NUM_EPOCHS = 5
     CHECKPOINT_PATH = f"{DIR}/transformer_cp_e{NUM_EPOCHS+LOADED_EPOCHS}.pt"
@@ -380,41 +384,42 @@ if __name__ == "__main__":
                 f"Epoch time = {(end_time - start_time):.3f}s"
             )
         )
-    writer.flush() # make sure that all pending events have been written to disk.
+    writer.flush()  # make sure that all pending events have been written to disk.
     writer.close()
 
     # to save general checkpoint
     print(f"Saving checkpoint for {CHECKPOINT_PATH.split('/')[-1]}")
-    torch.save({
-                'epoch': NUM_EPOCHS + LOADED_EPOCHS,
-                'model_state_dict': transformer.state_dict(),
-                'optimizer_state_dict': optimizer.state_dict(),
-                'val_loss': val_loss,
-                'train_loss': train_loss
-                }, CHECKPOINT_PATH)
-    
+    torch.save(
+        {
+            "epoch": NUM_EPOCHS + LOADED_EPOCHS,
+            "model_state_dict": transformer.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "val_loss": val_loss,
+            "train_loss": train_loss,
+        },
+        CHECKPOINT_PATH,
+    )
 
-    def calc_bleu_scores(pred, tgt): 
-        r , c = tgt.rstrip(), pred.rstrip()
-        sacre_ref = [[r]] # list of list of text
-        sacre_c = [c] # list of text
+    def calc_bleu_scores(pred, tgt):
+        r, c = tgt.rstrip(), pred.rstrip()
+        sacre_ref = [[r]]  # list of list of text
+        sacre_c = [c]  # list of text
         scores = []
         for i in range(1, 5):
-            bleu = BLEU(smooth_method='exp', tokenize='zh', max_ngram_order=i)
-            s = bleu.corpus_score(sacre_c, sacre_ref).score  
+            bleu = BLEU(smooth_method="exp", tokenize="zh", max_ngram_order=i)
+            s = bleu.corpus_score(sacre_c, sacre_ref).score
             scores.append(s)
         return sum(scores) / len(scores)
 
-
-        # # chrf 
+        # # chrf
         # chrf = CHRF(word_order=0, beta=0, eps_smoothing=False)
         # s = chrf.corpus_score(sacre_c, sacre_ref).score
         # scores['CHRF'] = "{:.3f}".format(s)
-        # # chrf++ 
+        # # chrf++
         # chrf = CHRF(word_order=2, beta=0, eps_smoothing=False)
         # s = chrf.corpus_score(sacre_c, sacre_ref).score
         # scores['CHRF++'] = "{:.3f}".format(s)
-        # # ter 
+        # # ter
         # ter = TER(asian_support=True, normalized=True)
         # s = ter.corpus_score(sacre_c, sacre_ref).score
         # scores['TER'] = "{:.3f}".format(s)
@@ -426,7 +431,7 @@ if __name__ == "__main__":
         # for m in s[0]:
         #     for m2 in s[0][m]:
         #         scores[f'{m}-{m2}'] = "{:.3f}".format(s[0][m][m2])
-        # # bert score 
+        # # bert score
         # P, R, F = score(sacre_c, sacre_ref, lang='zh')
         # P, R, F = P.item(), R.item(), F.item()
         # scores['BERTSCORE-R']= "{:.3f}".format(R)
