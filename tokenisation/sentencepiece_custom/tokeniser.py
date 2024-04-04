@@ -89,6 +89,8 @@ class BaseBPETokeniser(object):
             out["labels"] = self.zh_model.encode(
                 text_target, max_len=max_zh_len or max_len
             )
+            
+        return out
 
     def encode_zh(self, sent: str, max_len=128):
         return self.zh_model.encode(sent, max_len=max_len)
