@@ -34,7 +34,14 @@ class LangTokeniser(object):
 
     def decode(self, ids: list[int] | list[list[int]]):
         return self.model.decode(
-            list(filter(lambda id: id >= 0 and id < len(self), ids))
+            list(
+                filter(
+                    lambda id: id >= 0
+                    and id < len(self)
+                    and id != LangTokeniser.PAD_ID,
+                    ids,
+                )
+            )
         )
 
     def get_special_ids(self):
