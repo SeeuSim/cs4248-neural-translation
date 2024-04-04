@@ -11,42 +11,53 @@ from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader
 from sacrebleu.metrics import BLEU, CHRF, TER
 from rouge_chinese import Rouge
-import jieba # you can use any other word cutting library
+import jieba  # you can use any other word cutting library
 from bert_score import score
+
 from transformers import MarianTokenizer
 from nltk.translate.bleu_score import sentence_bleu
 from torch.utils.tensorboard import SummaryWriter
+
+from ...tokenisation.sentencepiece_custom.tokeniser import BaseBPETokeniser
 
 torch.manual_seed(0)
 
 
 dataset = load_dataset("iwslt2017", "iwslt2017-en-zh")
-model_name = "Helsinki-NLP/opus-mt-en-zh"
-tokenizer = MarianTokenizer.from_pretrained(model_name)
+# model_name = "Helsinki-NLP/opus-mt-en-zh"
+# tokeniser = MarianTokenizer.from_pretrained(model_name)
+
+tokeniser = BaseBPETokeniser(
+    # en_model_file="../../tokenisation/sentencepiece_custom/en.model", 
+    # zh_model_file="../../tokenisation/sentencepiece_custom/zh.model"
+)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = (
-    tokenizer.unk_token_id,
-    tokenizer.pad_token_id,
-    tokenizer.pad_token_id, 
-    # according to source code, marian does not use bos_token (retrieves from config.decoder_start_token_id) 
-    # - https://github.com/huggingface/transformers/blob/main/src/transformers/models/marian/tokenization_marian.py
-    # from "config = AutoConfig.from_pretrained(model_name)", we see decoder_start_token_id = 65000 = pad_token_ide
-    tokenizer.eos_token_id,
-) 
+# UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = (
+#     tokenizer.unk_token_id,
+#     tokenizer.pad_token_id,
+#     tokenizer.pad_token_id,
+#     # according to source code, marian does not use bos_token (retrieves from config.decoder_start_token_id)
+#     # - https://github.com/huggingface/transformers/blob/main/src/transformers/models/marian/tokenization_marian.py
+#     # from "config = AutoConfig.from_pretrained(model_name)", we see decoder_start_token_id = 65000 = pad_token_ide
+#     tokenizer.eos_token_id,
+# )
+UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = tokeniser.get_special_ids('en')
+ZH_UNK_IDX, ZH_PAD_IDX, ZH_BOS_IDX, ZH_EOS_IDX = tokeniser.get_special_ids('zh')
 
-print(UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX) # prints 1 65000 65000 0
+# print(UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX)  # prints 1 65000 65000 0
 
-SRC_VOCAB_SIZE = len(tokenizer)
-TGT_VOCAB_SIZE = len(tokenizer)
+SRC_VOCAB_SIZE = len(tokeniser)
+TGT_VOCAB_SIZE = len(tokeniser)
 EMB_SIZE = 512
 NHEAD = 8
 FFN_HID_DIM = 512
 BATCH_SIZE = 64
 NUM_ENCODER_LAYERS = 3
 NUM_DECODER_LAYERS = 3
+
 
 # helper Module that adds positional encoding to the token embedding to introduce a notion of word order.
 class PositionalEncoding(nn.Module):
@@ -159,19 +170,21 @@ def create_mask(src, tgt):
     src_mask = torch.zeros((src_seq_len, src_seq_len), device=DEVICE).type(torch.bool)
 
     src_padding_mask = (src == PAD_IDX).transpose(0, 1)
-    tgt_padding_mask = (tgt == PAD_IDX).transpose(0, 1)
+    tgt_padding_mask = (tgt == ZH_PAD_IDX).transpose(0, 1)
     return src_mask, tgt_mask, src_padding_mask, tgt_padding_mask
+
 
 def collate_fn(batch):
     src_batch, tgt_batch = [], []
     for row in batch:
         tr = row["translation"]
-        tr = tokenizer(tr["en"], text_target=tr["zh"])
+        
+        tr = tokeniser(tr["en"], text_target=tr["zh"], max_len=EMB_SIZE)
         src_batch.append(torch.tensor(tr["input_ids"]).to(DEVICE))
         tgt_batch.append(torch.tensor(tr["labels"]).to(DEVICE)) # should we tokenize tgt with the zh-en tokenizer instead?
 
     src_batch = pad_sequence(src_batch, padding_value=PAD_IDX)
-    tgt_batch = pad_sequence(tgt_batch, padding_value=PAD_IDX)
+    tgt_batch = pad_sequence(tgt_batch, padding_value=ZH_PAD_IDX)
     return src_batch, tgt_batch
 
 
@@ -179,12 +192,12 @@ def train_epoch(model, optimizer):
     model.train()
     losses = 0
 
-    # if want to train on only a subset of the train 
+    # if want to train on only a subset of the train
     # train_iter = load_dataset("iwslt2017", "iwslt2017-en-zh", split="train[:128]")
 
     # if want to train on all the train data
     train_iter = dataset["train"]
-    
+
     train_dataloader = DataLoader(
         train_iter, batch_size=BATCH_SIZE, collate_fn=collate_fn
     )
@@ -235,6 +248,7 @@ def calc_bleu_scores(pred, tgt):
     return sentence_bleu_score, sum(sacrebleu_scores) / len(sacrebleu_scores)
 
 
+
 def evaluate(model):
     model.eval()
     losses = 0
@@ -246,11 +260,11 @@ def evaluate(model):
 
     # if want to eval on all the validation data
     val_iter = dataset["validation"]
-    
+
     debug = True
-    for val in tqdm(val_iter['translation'], "eval - sacrebleu"):
-        src = val['en']
-        tgt = val['zh']
+    for val in tqdm(val_iter["translation"], "eval - sacrebleu"):
+        src = val["en"]
+        tgt = val["zh"]
         pred = translate(model, src)
         if debug:
             print(f"source: {src}")
@@ -316,15 +330,15 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
 # actual function to translate input sentence into target language
 def translate(model: torch.nn.Module, src_sentence: str):
     model.eval()
-    src = torch.tensor(tokenizer(src_sentence)["input_ids"]).view(-1, 1)
+    # src = torch.tensor(tokenizer(src_sentence)["input_ids"]).view(-1, 1)
+    src = torch.tensor(tokeniser(src_sentence)).view(-1, 1)
     num_tokens = src.shape[0]
     src_mask = (torch.zeros(num_tokens, num_tokens)).type(torch.bool)
     tgt_tokens = greedy_decode(
         model, src, src_mask, max_len=num_tokens + 5, start_symbol=BOS_IDX
     ).flatten()
-    return " ".join(tokenizer.decode(list(tgt_tokens.cpu().numpy()))).replace(
-        tokenizer.eos_token, ""
-    )
+    return " ".join(tokeniser.decode(list(tgt_tokens.cpu().numpy())))
+
 
 if __name__ == "__main__":
     transformer = Seq2SeqTransformer(
@@ -342,7 +356,6 @@ if __name__ == "__main__":
         if p.dim() > 1:
             nn.init.xavier_uniform_(p)
 
-
     loss_fn = torch.nn.CrossEntropyLoss(ignore_index=PAD_IDX)
 
     optimizer = torch.optim.Adam(
@@ -356,10 +369,9 @@ if __name__ == "__main__":
     if PATH != "":
         print(f"Loaded checkpoint from {PATH.split('/')[-1]}")
         checkpoint = torch.load(PATH, map_location=f"cuda:0")
-        transformer.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        LOADED_EPOCHS = checkpoint['epoch']
-
+        transformer.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+        LOADED_EPOCHS = checkpoint["epoch"]
 
     NUM_EPOCHS = 5
     CHECKPOINT_PATH = f"{DIR}/transformer_cp_e{NUM_EPOCHS+LOADED_EPOCHS}.pt"
@@ -383,7 +395,7 @@ if __name__ == "__main__":
                 f"Epoch time = {(end_time - start_time):.3f}s"
             )
         )
-    writer.flush() # make sure that all pending events have been written to disk.
+    writer.flush()  # make sure that all pending events have been written to disk.
     writer.close()
 
     # to save general checkpoint
