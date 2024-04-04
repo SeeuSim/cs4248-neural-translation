@@ -32,7 +32,7 @@ class LangTokeniser(object):
                 ids = ids[: int(max_len)]
         return ids
 
-    def decode(self, ids: list[int] | list[list[int]]):
+    def decode(self, ids: list[int]):
         return self.model.decode(
             list(
                 filter(
@@ -43,6 +43,9 @@ class LangTokeniser(object):
                 )
             )
         )
+    
+    def decode_batch(self, ids: list[list[int]]):
+        return [self.decode(id) for id in ids]
 
     def get_special_ids(self):
         UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = self.special_ids
