@@ -17,7 +17,7 @@ from bert_score import score
 # from transformers import MarianTokenizer
 from torch.utils.tensorboard import SummaryWriter
 
-from ...tokenisation.sentencepiece_custom.tokeniser import LangTokeniser
+from ...tokenisation.sentencepiece_custom.tokeniser import BaseBPETokeniser
 
 torch.manual_seed(0)
 
@@ -25,14 +25,17 @@ torch.manual_seed(0)
 dataset = load_dataset("iwslt2017", "iwslt2017-en-zh")
 # model_name = "Helsinki-NLP/opus-mt-en-zh"
 # tokenizer = MarianTokenizer.from_pretrained(model_name)
-en_tokeniser = LangTokeniser("en")
-zh_tokeniser = LangTokeniser("zh")
+
+tokeniser = BaseBPETokeniser(
+    # en_model_file="../../tokenisation/sentencepiece_custom/en.model", 
+    # zh_model_file="../../tokenisation/sentencepiece_custom/zh.model"
+)
 
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(DEVICE)
 
-UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = en_tokeniser.get_special_ids()
-ZH_UNK_IDX, ZH_PAD_IDX, ZH_BOS_IDX, ZH_EOS_IDX = en_tokeniser.get_special_ids()
+UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = tokeniser.get_special_ids('en')
+ZH_UNK_IDX, ZH_PAD_IDX, ZH_BOS_IDX, ZH_EOS_IDX = tokeniser.get_special_ids('zh')
 # UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX = (
 #     tokenizer.unk_token_id,
 #     tokenizer.pad_token_id,
@@ -45,8 +48,8 @@ ZH_UNK_IDX, ZH_PAD_IDX, ZH_BOS_IDX, ZH_EOS_IDX = en_tokeniser.get_special_ids()
 
 print(UNK_IDX, PAD_IDX, BOS_IDX, EOS_IDX)  # prints 1 65000 65000 0
 
-SRC_VOCAB_SIZE = len(en_tokeniser)
-TGT_VOCAB_SIZE = len(zh_tokeniser)
+SRC_VOCAB_SIZE = len(tokeniser)
+TGT_VOCAB_SIZE = len(tokeniser)
 EMB_SIZE = 512
 NHEAD = 8
 FFN_HID_DIM = 512
@@ -174,11 +177,10 @@ def collate_fn(batch):
     src_batch, tgt_batch = [], []
     for row in batch:
         tr = row["translation"]
-        src_batch.appen(torch.tensor(en_tokeniser.encode(tr["en"])).to(DEVICE))
-        tgt_batch.appen(torch.tensor(zh_tokeniser.encode(tr["zh"])).to(DEVICE))
-        # tr = tokenizer(tr["en"], text_target=tr["zh"])
-        # src_batch.append(torch.tensor(tr["input_ids"]).to(DEVICE))
-        # tgt_batch.append(torch.tensor(tr["labels"]).to(DEVICE)) # should we tokenize tgt with the zh-en tokenizer instead?
+        
+        tr = tokeniser(tr["en"], text_target=tr["zh"], max_len=EMB_SIZE)
+        src_batch.append(torch.tensor(tr["input_ids"]).to(DEVICE))
+        tgt_batch.append(torch.tensor(tr["labels"]).to(DEVICE)) # should we tokenize tgt with the zh-en tokenizer instead?
 
     src_batch = pad_sequence(src_batch, padding_value=PAD_IDX)
     tgt_batch = pad_sequence(tgt_batch, padding_value=ZH_PAD_IDX)
@@ -321,13 +323,13 @@ def greedy_decode(model, src, src_mask, max_len, start_symbol):
 def translate(model: torch.nn.Module, src_sentence: str):
     model.eval()
     # src = torch.tensor(tokenizer(src_sentence)["input_ids"]).view(-1, 1)
-    src = torch.tensor(en_tokeniser.encode(src_sentence)).view(-1, 1)
+    src = torch.tensor(tokeniser(src_sentence)).view(-1, 1)
     num_tokens = src.shape[0]
     src_mask = (torch.zeros(num_tokens, num_tokens)).type(torch.bool)
     tgt_tokens = greedy_decode(
         model, src, src_mask, max_len=num_tokens + 5, start_symbol=BOS_IDX
     ).flatten()
-    return " ".join(zh_tokeniser.decode(list(tgt_tokens.cpu().numpy())))
+    return " ".join(tokeniser.decode(list(tgt_tokens.cpu().numpy())))
 
 
 if __name__ == "__main__":

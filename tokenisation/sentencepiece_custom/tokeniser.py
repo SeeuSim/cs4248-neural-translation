@@ -98,3 +98,11 @@ class BaseBPETokeniser(object):
 
     def decode_src(self, labels: list[int]):
         return self.en_model.decode(labels)
+    
+    def get_special_ids(self, lang: str):
+        match lang:
+            case 'en':
+                return self.en_model.get_special_ids()
+            case 'zh':
+                return self.zh_model.get_special_ids()
+    
