@@ -387,27 +387,56 @@ def evaluate_fn(model, data_loader, criterion, device):
 
 ################################ 7. EXECUTE TRAINING
 
+# train for first 10 epochs 
 n_epochs = 10
 clip = 1.0
 teacher_forcing_ratio = 0.5
+CHECKPOINT_DIR = "./model_checkpoints"
+checkpoint_path = f"{CHECKPOINT_DIR}/model_checkpoint.pt"
+if not os.path.exists(CHECKPOINT_DIR):
+    os.makedirs(CHECKPOINT_DIR)
+
 best_valid_loss = float("inf")
-CHECKPOINT_DIR = "./spm_model_checkpoints"
-patience = 3  
+
+for epoch in tqdm.tqdm(range(n_epochs)):
+    train_loss = train_fn(
+        model,
+        train_data_loader,
+        optimizer,
+        criterion,
+        clip,
+        teacher_forcing_ratio,
+        device,
+    )
+    valid_loss = evaluate_fn(
+        model,
+        valid_data_loader,
+        criterion,
+        device,
+    )
+    if valid_loss < best_valid_loss:
+        best_valid_loss = valid_loss
+        torch.save({'epoch': epoch,
+                        'model_state_dict': model.state_dict(),
+                        'optimizer_state_dict': optimizer.state_dict(),
+                        'loss': best_valid_loss}, f"{CHECKPOINT_DIR}/model_checkpoint.pt")
+        print(f"Checkpoint saved at epoch {epoch+1}")
+    print(f"\tTrain Loss: {train_loss:7.3f} | Train PPL: {np.exp(train_loss):7.3f}")
+    print(f"\tValid Loss: {valid_loss:7.3f} | Valid PPL: {np.exp(valid_loss):7.3f}")
+
+# train on best model 
+patience = 2  
 no_improvement_epochs = 0
 
-# Check if a checkpoint exists
-checkpoint_path = f"{CHECKPOINT_DIR}/model_checkpoint.pt"
 if os.path.exists(checkpoint_path):
     print("Loading checkpoint...")
     checkpoint = torch.load(checkpoint_path)
     model.load_state_dict(checkpoint['model_state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-    best_valid_loss = checkpoint['loss']
+    best_valid_loss = checkpoint['loss'] # overwrite the global best_valid_loss
+    print(f"Current best val loss : {best_valid_loss}")
 else:
     print("Training started, no checkpoint found.")
-
-if not os.path.exists(CHECKPOINT_DIR):
-    os.makedirs(CHECKPOINT_DIR)
 
 for epoch in tqdm.tqdm(range(n_epochs)):
     start_time = time.time()
@@ -415,29 +444,25 @@ for epoch in tqdm.tqdm(range(n_epochs)):
     valid_loss = evaluate_fn(model, valid_data_loader, criterion, device)
     end_time = time.time()
     epoch_mins, epoch_secs = epoch_time(start_time, end_time)
-
-    # Save model
     if valid_loss < best_valid_loss:
         best_valid_loss = valid_loss
-        checkpoint_filename = f"{CHECKPOINT_DIR}/model_checkpoint.pt"
         torch.save({'epoch': epoch,
                     'model_state_dict': model.state_dict(),
                     'optimizer_state_dict': optimizer.state_dict(),
-                    'loss': best_valid_loss}, checkpoint_filename)
-        print(f"Checkpoint saved to {checkpoint_filename}")
-        no_improvement_epochs = 0 
+                    'loss': best_valid_loss}, f"{CHECKPOINT_DIR}/model_checkpoint.pt")
+        print(f"Checkpoint saved at epoch {epoch+1}")
+        no_improvement_epochs = 0
     else:
         no_improvement_epochs += 1
-
+        
     print(f'Epoch: {epoch+1:02} | Time: {epoch_mins}m {epoch_secs}s')
     print(f'\tTrain Loss: {train_loss:.3f} | Train PPL: {np.exp(train_loss):7.3f}')
     print(f'\t Valid Loss: {valid_loss:.3f} | Valid PPL: {np.exp(valid_loss):7.3f}')
-
     # Auto stop
     if no_improvement_epochs >= patience:
         print(f"No improvement in val loss for {patience} consecutive epochs. Stopping training.")
         break
-
+            
 print("Training completed.")
 
 ################################ 8. EXECUTE EVAL 
@@ -524,4 +549,4 @@ df['en'] = en
 df['zh'] = zh 
 df['pred'] = pred
 
-df.to_csv("spm_10000_rows_285_max_g.csv")
+df.to_csv("050424_2300_model_checkpoint.csv")
