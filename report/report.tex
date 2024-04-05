@@ -1,0 +1,87 @@
+\documentclass[10pt]{article}
+
+\usepackage[a4paper]{geometry}
+\usepackage{fancyhdr}
+\usepackage{amsmath}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\newcolumntype{B}{>{\hsize=1.9\hsize}X}
+\newcolumntype{S}{>{\hsize=.7\hsize}X}
+
+\usepackage{tikz} 
+\usetikzlibrary{positioning}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    urlcolor=blue,
+  }
+\urlstyle{same}
+
+
+\usepackage{graphicx}
+\graphicspath{ {./} }
+
+\usepackage{minted}
+\usemintedstyle{vs}
+
+\usepackage{xcolor} % to access the named colour LightGray
+\definecolor{LightGray}{gray}{0.9}
+
+\begin{document}
+
+\begin{titlepage}
+  \begin{center}
+      \vspace*{1cm}
+          
+      \Huge
+      \textbf{Neural Machine Translation}
+          
+      \vspace{0.5cm}
+      \LARGE
+      An evaluation of model architectures, tokenisation and embeddings on the IWSLT2017 En-Zh dataset
+          
+      \vspace{1.5cm}
+          
+      \textbf{A0239298L}
+
+      \textbf{A0XXXXXXX}
+
+      \textbf{A0XXXXXXX}
+
+      \textbf{A0XXXXXXX}
+
+      \textbf{A0XXXXXXX}
+
+      \textbf{A0XXXXXXX}
+          
+      \vfill
+      
+      CS4248 AY2023/24 S2\\
+      Team Project \\
+      \textbf{Team 42} \\
+      -\\
+      Advised by: \\
+      \textbf{Naaman Tan}
+          
+      \vspace{0.8cm}
+          
+      \Large
+      School of Computing\\
+      National University of Singapore\\
+      Singapore\\
+      16 April 2024
+          
+  \end{center}
+\end{titlepage}
+
+\tableofcontents
+
+\newpage
+\addcontentsline{toc}{section}{Unnumbered Section}
+\section*{Unnumbered Section}
+
+\newpage
+\section{Numbered Section}
+
+\end{document}
