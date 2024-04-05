@@ -89,7 +89,7 @@ OUTPUT_VOCAB_SIZE = TGT_VOCAB_SIZE
 
 # Parameters for sentencepiece tokenizer
 _, SRC_PAD_IDX, _, _ = en_tokeniser.get_special_ids()
-_, TGT_PAD_IDX, _, _ = en_tokeniser.get_special_ids()
+_, TGT_PAD_IDX, _, _ = zh_tokeniser.get_special_ids()
 
 # Parameters for Transformer & training
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
