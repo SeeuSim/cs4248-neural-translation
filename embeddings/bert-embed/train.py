@@ -14,13 +14,14 @@ from transformers import (
 # Polyfill
 np.object = object
 
-IS_KAGGLE=False
+IS_KAGGLE = False
 
-IS_CUSTOM_TOK=False
+IS_CUSTOM_TOK = False
 
 if IS_KAGGLE:
     from kaggle_secrets import UserSecretsClient
     import wandb
+
     user_secrets = UserSecretsClient()
     _WANDB_API_KEY = user_secrets.get_secret("wandb_sec")
     wandb.login(key=_WANDB_API_KEY)
@@ -32,11 +33,12 @@ else:
 
 if IS_CUSTOM_TOK:
     from ..utils import tokenise
+
     # Add own class to output vocab indices, decode and attention mask
     tokenizer = lambda sent: tokenise(sent)
 else:
     tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
-    
+
 
 """
 Training Device
@@ -60,6 +62,8 @@ train, test = dataset["train"], dataset["test"]
 """
 Preprocess and tokenise
 """
+
+
 def get_row_data(batch):
     return tokenizer(
         list(map(lambda r: r["en"], batch["translation"])),
@@ -76,12 +80,13 @@ test_dataset.set_format("torch")
 Model Config
 """
 
-vocab_size = 10_000
+vocab_size = 16_384
 output_path = "./models"
 
 config = BertConfig(
     vocab_size=vocab_size,
-    max_position_embeddings=300,  # or 512 (sentence length for attn mask)
+    max_position_embeddings=288,  # or 512 (sentence length for attn mask)
+    hidden_size=256,
     # Add or modify other config parameters as needed
 )
 
@@ -111,7 +116,7 @@ training_args = TrainingArguments(
     save_steps=1000,
     load_best_model_at_end=True,
     save_total_limit=3,
-    use_cpu=dev=='CPU',
+    use_cpu=dev == "CPU",
     dataloader_pin_memory=False,
 )
 
@@ -124,11 +129,9 @@ trainer = Trainer(
     eval_dataset=test_dataset,
 )
 
-trainer._get_train_sampler = \
-    lambda: RandomSampler(
-        trainer.train_dataset, 
-        generator=torch.Generator(device)
-    )
+trainer._get_train_sampler = lambda: RandomSampler(
+    trainer.train_dataset, generator=torch.Generator(device)
+)
 
 """
 Actual Training
