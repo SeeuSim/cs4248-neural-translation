@@ -122,7 +122,7 @@ class BPEforBERTTokenizer(object):
     def __init__(self, en_model_file=None, zh_model_file=None):
         self.en_model = LangTokeniser("en", model_file=en_model_file)
         self.zh_model = LangTokeniser("zh", model_file=zh_model_file)
-        self.pad = self.en_model.PAD_ID
+        self.pad_token_id = self.en_model.PAD_ID
 
     def __len__(self):
         """
@@ -143,3 +143,19 @@ class BPEforBERTTokenizer(object):
         out['special_tokens_mask'] = [1] + [0] * (len_ids - 2) + [1] * (max_len - len_ids + 1)
         out['attention_mask'] = [1] * len_ids + [0] * (max_len - len_ids)
         return out
+    
+    def pad(self, *args, **kwargs):
+        output = {'token_type_ids': [], 'attention_mask': [], 'input_ids': []}
+        # print(f'length: {len(args)}')
+        # for i in range(len(args)):
+        #     print(i)
+        #     print(type(args[i]))
+        #     print(args[i])
+
+        # keys = args[0][0].keys()
+        # print(keys)
+        for input in args[0]:
+            for key, value in input.items():
+                output[key].append(value)
+        return output
+        # return args
