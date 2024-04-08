@@ -18,6 +18,8 @@ IS_KAGGLE = False
 
 IS_CUSTOM_TOK = True
 
+LANG = "en"
+
 if IS_KAGGLE:
     from kaggle_secrets import UserSecretsClient
     import wandb
@@ -56,7 +58,8 @@ torch.set_default_device(device)
 """
 Dataset
 """
-train, test = dataset["train"], dataset["test"]
+train = datasets.concatenate_datasets([dataset["train"], dataset["test"]]) # combine train and test dataset
+test = dataset["validation"]
 
 """
 Preprocess and tokenise
@@ -64,11 +67,17 @@ Preprocess and tokenise
 
 
 def get_row_data(batch):
-    return tokenizer(
+    if IS_CUSTOM_TOK:
+      return tokenizer(
+          list(map(lambda r: r[LANG], batch["translation"])),
+          lang=LANG,
+          max_len=288,
+      )
+    else:
+      return tokenizer(
         list(map(lambda r: r["en"], batch["translation"])),
         return_special_tokens_mask=True,
     )
-
 
 train_dataset = train.map(get_row_data, batched=True)
 train_dataset.set_format("torch")
