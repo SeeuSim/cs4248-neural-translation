@@ -37,7 +37,7 @@ if IS_CUSTOM_TOK:
     from sentencepiece_custom.tokeniser import BPEforBERTTokenizer
 
     # Add own class to output vocab indices, decode and attention mask
-    tokenizer = BPEforBERTTokenizer(zh_model_file="./sentencepiece_custom/zh.model", en_model_file="./sentencepiece_custom/en.model")
+    tokenizer = BPEforBERTTokenizer(zh_model_file=".\\embeddings\\bert-embed\\sentencepiece_custom\\zh.model", en_model_file=".\\embeddings\\bert-embed\\sentencepiece_custom\\en.model")
 else:
     tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
 
@@ -65,19 +65,20 @@ test = dataset["validation"]
 Preprocess and tokenise
 """
 
-
 def get_row_data(batch):
     if IS_CUSTOM_TOK:
-      return tokenizer(
-          list(map(lambda r: r[LANG], batch["translation"])),
-          lang=LANG,
-          max_len=288,
-      )
+      output = {'token_type_ids': [], 'attention_mask': [], 'input_ids': [], 'special_tokens_mask' : []}
+      for sent in list(map(lambda r: r[LANG], batch["translation"])):
+        tokenised = tokenizer(sent, lang=LANG, max_len=288)
+        for key, value in tokenised.items():
+            output[key].append(value)
+      return output
+      
     else:
       return tokenizer(
         list(map(lambda r: r["en"], batch["translation"])),
         return_special_tokens_mask=True,
-    )
+        )
 
 train_dataset = train.map(get_row_data, batched=True)
 train_dataset.set_format("torch")
@@ -94,7 +95,7 @@ output_path = "./models"
 config = BertConfig(
     vocab_size=vocab_size,
     max_position_embeddings=288,  # or 512 (sentence length for attn mask)
-    hidden_size=256,
+    hidden_size=252, # need to be a multiple of 12 (num of attention heads in BERT)
     # Add or modify other config parameters as needed
 )
 
@@ -116,7 +117,7 @@ training_args = TrainingArguments(
     output_dir=output_path,
     evaluation_strategy="steps",
     overwrite_output_dir=True,
-    num_train_epochs=10,
+    num_train_epochs=15,
     per_device_train_batch_size=10,
     gradient_accumulation_steps=8,
     per_device_eval_batch_size=64,

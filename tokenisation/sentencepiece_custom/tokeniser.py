@@ -122,12 +122,13 @@ class BPEforBERTTokenizer(object):
     def __init__(self, en_model_file=None, zh_model_file=None):
         self.en_model = LangTokeniser("en", model_file=en_model_file)
         self.zh_model = LangTokeniser("zh", model_file=zh_model_file)
+        self.pad = self.en_model.PAD_ID
 
     def __len__(self):
         """
         Both the english and chinese tokenisers have the same length.
         """
-        return len(self.bpe_tokenizer)
+        return len(self.en_model)
 
     def __call__(self, sent: str, lang='en', max_len=128):
         if lang == 'en':
