@@ -21,16 +21,17 @@ class LangTokeniser(object):
     def encode_batch(self, sents: list[str], max_len=None):
         return [self.encode(sent, max_len) for sent in sents]
 
-    def encode(self, sent: str | list[str], max_len=None):
+    def encode(self, sent, max_len=None):
         if type(sent) == list:
             return self.encode_batch(sent, max_len)
         ids = self.model.encode(sent)
+        len_ids = len(ids)
         if max_len is not None:
             if len(ids) < int(max_len):
                 ids = [*ids, *([LangTokeniser.PAD_ID] * (int(max_len) - len(ids)))]
             elif len(ids) > int(max_len):
                 ids = ids[: int(max_len)]
-        return ids
+        return ids, len_ids
 
     def decode(self, ids: list[int]):
         return self.model.decode(
@@ -91,16 +92,16 @@ class BaseBPETokeniser(object):
         return len(self.en_model)
 
     def __call__(self, sent: str, text_target=None, max_len=128, max_zh_len=None):
+        input_ids, len_input_ids = self.en_model.encode(sent, max_len=max_len)
         out = {
-            "input_ids": self.en_model.encode(sent, max_len=max_len),
-            "attention_mask": [1] * max_len,
+            "input_ids": input_ids,
         }
         if text_target:
             out["labels"] = self.zh_model.encode(
                 text_target, max_len=max_zh_len or max_len
             )
 
-        return out
+        return out, len_input_ids
 
     def encode_zh(self, sent: str, max_len=128):
         return self.zh_model.encode(sent, max_len=max_len)
@@ -112,8 +113,25 @@ class BaseBPETokeniser(object):
         return self.en_model.decode(labels)
 
     def get_special_ids(self, lang: str):
-        match lang:
-            case "en":
-                return self.en_model.get_special_ids()
-            case "zh":
-                return self.zh_model.get_special_ids()
+        if lang == "en":
+            return self.en_model.get_special_ids()
+        elif lang == "zh":
+            return self.zh_model.get_special_ids()
+
+
+class BPEforBERTTokenizer(object):
+    def __init__(self, en_model_file=None, zh_model_file=None):
+        self.bpe_tokenizer = BaseBPETokeniser(en_model_file=en_model_file, zh_model_file=zh_model_file)
+
+    def __len__(self):
+        """
+        Both the english and chinese tokenisers have the same length.
+        """
+        return len(self.bpe_tokenizer)
+
+    def __call__(self, sent: str, text_target=None, max_len=128, max_zh_len=None):
+        out, len_out = self.bpe_tokenizer(sent, text_target=text_target, max_len=max_len, max_zh_len=max_zh_len) #len_out includes SOS and EOS
+        out['token_type_ids'] = [0] * max_len
+        out['special_tokens_mask'] = [1] + [0] * (len_out - 2) + [1] * (max_len - len_out + 1)
+        out['attention_mask'] = [1] * len_out + [0] * (max_len - len_out)
+        return out
