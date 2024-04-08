@@ -25,13 +25,12 @@ class LangTokeniser(object):
         if type(sent) == list:
             return self.encode_batch(sent, max_len)
         ids = self.model.encode(sent)
-        len_ids = len(ids)
         if max_len is not None:
             if len(ids) < int(max_len):
                 ids = [*ids, *([LangTokeniser.PAD_ID] * (int(max_len) - len(ids)))]
             elif len(ids) > int(max_len):
                 ids = ids[: int(max_len)]
-        return ids, len_ids
+        return ids
 
     def decode(self, ids: list[int]):
         return self.model.decode(
@@ -92,7 +91,7 @@ class BaseBPETokeniser(object):
         return len(self.en_model)
 
     def __call__(self, sent: str, text_target=None, max_len=128, max_zh_len=None):
-        input_ids, len_input_ids = self.en_model.encode(sent, max_len=max_len)
+        input_ids = self.en_model.encode(sent, max_len=max_len)
         out = {
             "input_ids": input_ids,
         }
@@ -101,7 +100,7 @@ class BaseBPETokeniser(object):
                 text_target, max_len=max_zh_len or max_len
             )
 
-        return out, len_input_ids
+        return out
 
     def encode_zh(self, sent: str, max_len=128):
         return self.zh_model.encode(sent, max_len=max_len)
@@ -121,7 +120,8 @@ class BaseBPETokeniser(object):
 
 class BPEforBERTTokenizer(object):
     def __init__(self, en_model_file=None, zh_model_file=None):
-        self.bpe_tokenizer = BaseBPETokeniser(en_model_file=en_model_file, zh_model_file=zh_model_file)
+        self.en_model = LangTokeniser("en", model_file=en_model_file)
+        self.zh_model = LangTokeniser("zh", model_file=zh_model_file)
 
     def __len__(self):
         """
@@ -129,9 +129,16 @@ class BPEforBERTTokenizer(object):
         """
         return len(self.bpe_tokenizer)
 
-    def __call__(self, sent: str, text_target=None, max_len=128, max_zh_len=None):
-        out, len_out = self.bpe_tokenizer(sent, text_target=text_target, max_len=max_len, max_zh_len=max_zh_len) #len_out includes SOS and EOS
+    def __call__(self, sent: str, lang='en', max_len=128):
+        if lang == 'en':
+            input_ids = self.en_model.encode(sent, max_len=max_len)
+        elif lang == 'zh':
+            input_ids = self.zh_model.encode(sent, max_len=max_len)
+        out = {
+            "input_ids": input_ids,
+        }
+        len_ids = len(input_ids) - input_ids.count(self.en_model.PAD_ID)
         out['token_type_ids'] = [0] * max_len
-        out['special_tokens_mask'] = [1] + [0] * (len_out - 2) + [1] * (max_len - len_out + 1)
-        out['attention_mask'] = [1] * len_out + [0] * (max_len - len_out)
+        out['special_tokens_mask'] = [1] + [0] * (len_ids - 2) + [1] * (max_len - len_ids + 1)
+        out['attention_mask'] = [1] * len_ids + [0] * (max_len - len_ids)
         return out
