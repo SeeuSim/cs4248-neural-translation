@@ -1,0 +1,161 @@
+2570it [1:18:07,  1.82s/it]
+#################### Epoch: 1 ####################
+Train loss: 0.7736834673102264 || One epoch training time: 1hrs 18mins 7secs
+Validation processing...
+10it [00:09,  1.02it/s]
+Best valid loss: 0.6115157932043076
+Valid loss: 0.6115157932043076 || One epoch training time: 0hrs 0mins 9secs
+----
+2570it [1:17:55,  1.82s/it]
+#################### Epoch: 2 ####################
+Train loss: 0.452577741844181 || One epoch training time: 1hrs 17mins 55secs
+Validation processing...
+10it [00:09,  1.02it/s]
+Best valid loss: 0.5932737350463867
+Valid loss: 0.5932737350463867 || One epoch training time: 0hrs 0mins 9secs
+----
+2570it [1:17:54,  1.82s/it]
+#################### Epoch: 3 ####################
+Train loss: 0.43574248257778037 || One epoch training time: 1hrs 17mins 54secs
+Validation processing...
+10it [00:09,  1.02it/s]
+Best valid loss: 0.579197782278061
+Valid loss: 0.579197782278061 || One epoch training time: 0hrs 0mins 9secs
+----
+2570it [1:20:29,  1.88s/it]
+#################### Epoch: 4 ####################
+Train loss: 0.4193727361436948 || One epoch training time: 1hrs 20mins 29secs
+Validation processing...
+10it [00:10,  1.03s/it]
+Best valid loss: 0.5622445940971375
+Valid loss: 0.5622445940971375 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:40,  1.88s/it]
+#################### Epoch: 5 ####################
+Train loss: 0.4040934379462602 || One epoch training time: 1hrs 20mins 40secs
+Validation processing...
+10it [00:10,  1.02s/it]
+Best valid loss: 0.5466036826372147
+Valid loss: 0.5466036826372147 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:42,  1.88s/it]
+#################### Epoch: 6 ####################
+Train loss: 0.3919896937645827 || One epoch training time: 1hrs 20mins 42secs
+Validation processing...
+10it [00:10,  1.02s/it]
+Best valid loss: 0.5386703252792359
+Valid loss: 0.5386703252792359 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:37,  1.88s/it]
+#################### Epoch: 7 ####################
+Train loss: 0.38231937961819573 || One epoch training time: 1hrs 20mins 37secs
+Validation processing...
+10it [00:10,  1.02s/it]
+Best valid loss: 0.533087819814682
+Valid loss: 0.533087819814682 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:37,  1.88s/it]
+#################### Epoch: 8 ####################
+Train loss: 0.37428049209748726 || One epoch training time: 1hrs 20mins 37secs
+Validation processing...
+10it [00:10,  1.02s/it]
+Best valid loss: 0.5283167630434036
+Valid loss: 0.5283167630434036 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:39,  1.88s/it]
+#################### Epoch: 9 ####################
+Train loss: 0.3673555763663021 || One epoch training time: 1hrs 20mins 39secs
+Validation processing...
+10it [00:10,  1.02s/it]
+Best valid loss: 0.5239318042993546
+Valid loss: 0.5239318042993546 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:44,  1.88s/it]
+#################### Epoch: 10 ####################
+Train loss: 0.36116769517905983 || One epoch training time: 1hrs 20mins 44secs
+Validation processing...
+10it [00:10,  1.01s/it]
+Best valid loss: 0.5177332490682602
+Valid loss: 0.5177332490682602 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:29,  1.88s/it]
+#################### Epoch: 11 ####################
+Train loss: 0.3555560631974662 || One epoch training time: 1hrs 20mins 29secs
+Validation processing...
+10it [00:10,  1.02s/it]
+Best valid loss: 0.5167269051074982
+Valid loss: 0.5167269051074982 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:34,  1.88s/it]
+#################### Epoch: 12 ####################
+Train loss: 0.3504237517888444 || One epoch training time: 1hrs 20mins 34secs
+Validation processing...
+10it [00:10,  1.02s/it]
+Best valid loss: 0.512279036641121
+Valid loss: 0.512279036641121 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:40,  1.88s/it]
+#################### Epoch: 13 ####################
+Train loss: 0.3457374642157369 || One epoch training time: 1hrs 20mins 40secs
+Validation processing...
+10it [00:10,  1.01s/it]
+Best valid loss: 0.5082521975040436
+Valid loss: 0.5082521975040436 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:27,  1.88s/it]
+#################### Epoch: 14 ####################
+Train loss: 0.3414346778207252 || One epoch training time: 1hrs 20mins 27secs
+Validation processing...
+10it [00:10,  1.02s/it]
+Best valid loss: 0.5074395030736923
+Valid loss: 0.5074395030736923 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:33,  1.88s/it]
+#################### Epoch: 15 ####################
+Train loss: 0.33737991907949116 || One epoch training time: 1hrs 20mins 33secs
+Validation processing...
+10it [00:10,  1.01s/it]
+Best valid loss: 0.5053986370563507
+Valid loss: 0.5053986370563507 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:29,  1.88s/it]
+#################### Epoch: 16 ####################
+Train loss: 0.3335086542112818 || One epoch training time: 1hrs 20mins 29secs
+Validation processing...
+10it [00:10,  1.01s/it]
+Best valid loss: 0.5037084251642228
+Valid loss: 0.5037084251642228 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:27,  1.88s/it]
+#################### Epoch: 17 ####################
+Train loss: 0.3298915220837649 || One epoch training time: 1hrs 20mins 27secs
+Validation processing...
+10it [00:10,  1.02s/it]
+Best valid loss: 0.5014634490013122
+Valid loss: 0.5014634490013122 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:20:25,  1.88s/it]
+#################### Epoch: 18 ####################
+Train loss: 0.3264561823369928 || One epoch training time: 1hrs 20mins 25secs
+Validation processing...
+10it [00:10,  1.01s/it]
+Best valid loss: 0.499367943406105
+Valid loss: 0.499367943406105 || One epoch training time: 0hrs 0mins 10secs
+----
+2570it [1:19:01,  1.84s/it]
+#################### Epoch: 19 ####################
+Train loss: 0.3232022826715666 || One epoch training time: 1hrs 19mins 1secs
+Validation processing...
+10it [00:09,  1.01it/s]
+***** Current best checkpoint is saved. *****
+Best valid loss: 0.4987120270729065
+Valid loss: 0.4987120270729065 || One epoch training time: 0hrs 0mins 9secs
+----
+2570it [1:19:52,  1.86s/it]
+#################### Epoch: 20 ####################
+Train loss: 0.3200741401500275 || One epoch training time: 1hrs 19mins 52secs
+Validation processing...
+10it [00:10,  1.02s/it]
+***** Current best checkpoint is saved. *****
+Best valid loss: 0.4967105001211166
+Valid loss: 0.4967105001211166 || One epoch training time: 0hrs 0mins 10secs

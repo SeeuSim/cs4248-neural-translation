@@ -180,16 +180,6 @@ class CustomDataset(Dataset):
         assert np.shape(src_list) == np.shape(input_trg_list), f"The shape of src_list and input_trg_list are different: {np.shape(src_list)} {np.shape(input_trg_list)}"
         assert np.shape(input_trg_list) == np.shape(output_trg_list), f"The shape of input_trg_list and output_trg_list are different: {np.shape(input_trg_list)} {np.shape(output_trg_list)}"
 
-    def make_mask(self):
-        e_mask = (self.src_data != SRC_PAD_IDX).unsqueeze(1) # (num_samples, 1, L)
-        d_mask = (self.input_trg_data != TGT_PAD_IDX).unsqueeze(1) # (num_samples, 1, L)
-
-        nopeak_mask = torch.ones([1, SEQUENCE_LENGTH, SEQUENCE_LENGTH], dtype=torch.bool) # (1, L, L)
-        nopeak_mask = torch.tril(nopeak_mask) # (1, L, L) to triangular shape
-        d_mask = d_mask & nopeak_mask # (num_samples, L, L) padding false
-
-        return e_mask, d_mask
-
     def __getitem__(self, idx):
         return self.src_data[idx], self.input_trg_data[idx], self.output_trg_data[idx]
 
