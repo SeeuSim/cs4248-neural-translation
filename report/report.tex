@@ -49,17 +49,23 @@
 %         Author 2 \\ Address line \\ ... \\ Address line \And
 %         Author 3 \\ Address line \\ ... \\ Address line}
 
-\author{A0239298L, A0XXXXXXX, A0XXXXXXX, \\ \bf A0XXXXXXX, A0234622M, A0218236H \\
+\author{A0239298L, A0250934E, A0239754R, \\ \bf A0276597E, A0234622M, A0218236H \\
   Group 42 \\
   Mentored by Naaman Tan \\
-  \texttt{\{e0773896,e0xxxxxxx,e0xxxxxxx,e0xxxxxxx,e0726622,e0544272\}@u.nus.edu}}
+  \texttt{\{e0773896,e0949099,e0774352,e1132330,e0726622,e0544272\}@u.nus.edu}}
 
 \begin{document}
 \maketitle
 \begin{abstract}
-\{
-    Insert Abstract Here
-\}
+
+Neural machine translation (NMT) has become the dominant approach for automated translation between languages in recent years. In this project, we attempt various key techniques taught in the module for text processing and representations, namely text tokenisation, embeddings, similarity, and machine learning. In exploring various approaches for each of these optimisations, we attempt to investigate which approaches perform better across the whole dataset, and on specific examples such as longer/shorter sentences to highlight the strengths/weaknesses of each approach.
+
+We evaluate our model’s performance on standard English-Chinese translation benchmarks, specifically BLEU-4 and BERTScore. BLEU-4 looks at the alignment of n-grams, where n ranges from 1 to 4, emphasising on both translation precision and fluency. Complementarily, BERTScore offers insights to paraphrased translations by computing similarity with contextualised token embeddings. 
+
+Our experimental analysis revealed that TER scores consistently mirrored the trends observed in BLEU-4 and BERTScore evaluations. In contrast, ROUGE and CHRF metrics exhibited limitations in the context of our translations, particularly when dealing with repetitive characters. ROUGE does not penalise repetition unless it impacts recall and precision relative to the reference, while CHRF, emphasising character n-gram precision and recall, can inflate scores despite translations having limited character variety. This analysis was based on the average scores from model predictions trained on just 10,000 rows from the training set. Recognizing that ROUGE, TER, CHRF and CHRF++ have their merits, we opted to exclude them for clarity and explainability purposes. 
+
+The results of this work confirm the effectiveness of our proposed techniques for building high-performing NMT systems capable of translating between languages such as English and Chinese. We believe that, if given sufficient compute resources and training data, a state-of-the-art (SOTA) model can be implemented using our best result implementations of tokenisation, model architecture and text embedding representations to achieve good performance in the English-Chinese translation task.
+    
 \end{abstract}
 
 \section{Report Best Practices}
