@@ -56,7 +56,7 @@
 
 \author{A0239298L, A0250934E, A0239754R, \\ \bf A0276597E, A0234622M, A0218236H \\
   Group 42 \\
-  Mentored by Naaman Tan \\
+  Mentored by Tan Yong-Jia, Naaman \\
   \texttt{\{e0773896,e0949099,e0774352,e1132330,}\\
   \texttt{e0726622,e0544272\}@u.nus.edu}}
 
@@ -195,6 +195,7 @@ rows of the train set, and report the results on the test set as follows:
     & \bf 1 & \bf 2 & \bf 3 \\ 
 \midrule
 \bf BLEU-4 & 4.08 & 2.41 & 0.10 \\ 
+\midrule
 \bf BERT-R & 0.54 & 0.51 & 0.44 \\
 \bf BERT-P & 0.56 & 0.55 & 0.54 \\
 \bf BERT-F & 0.55 & 0.53 & 0.49 \\
@@ -291,10 +292,81 @@ The model achieved its lowest validation loss after 8 epochs, with a learning ra
 
 Training the models on the entire training set, we obtain the following results:
 
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*4c}
+\toprule
+\bf Evaluation Metrics & \bf RNN & \bf LSTM & \bf Transformer \\ 
+\midrule
+\bf BLEU-4 & 9.74 & 0.70 & 13.78 \\
+\midrule
+\bf BERT-R & 0.64 & 0.49 & 0.71 \\
+\bf BERT-P & 0.69 & 0.44 & 0.75 \\
+\bf BERT-F & 0.67 & 0.46 & 0.73 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{model-arch-scores}   Evaluation scores from selected architectures with
+  trained BPE tokeniser (config 2.) , trained on full training set
+}
+\end{table}
+
+Binning the individual scores by length and averaging them by bin, we get the following results:
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*4c}
+\toprule
+\bf Sentence & \multicolumn{3}{c}{\bf BLEU} \\
+% \midrule
+\bf Length (EN) & \bf RNN & \bf LSTM & \bf Transformer \\ 
+\midrule
+\bf 0-20 & 12.30 & 1.18 & 15.27 \\
+\bf 21-30 & 7.60 & 0.07 & 12.36 \\
+\bf 31-40 & 5.84 & 0.06 & 11.76 \\
+\bf 41-50 & 5.35 & 0.06 & 11.46 \\
+\bf 51-60 & 4.50 & 0.07 & 10.78 \\
+\bf 60+ & 3.31 & 0.07 & 9.71 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{model-bleu} Average BLEU Scores by Sentence Length
+}
+\end{table}
+
+
+
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*4c}
+\toprule
+\bf Sentence & \multicolumn{3}{c}{\bf BERTSCORE --- F1} \\
+% \midrule
+\bf Length (EN) & \bf RNN & \bf LSTM & \bf Transformer \\ 
+\midrule
+\bf 0-20 & 0.69 & 0.49 & 0.73 \\
+\bf 21-30 & 0.65 & 0.43 & 0.73 \\
+\bf 31-40 & 0.63 & 0.42 & 0.73 \\
+\bf 41-50 & 0.62 & 0.43 & 0.73 \\
+\bf 51-60 & 0.61 & 0.43 & 0.72 \\
+\bf 60+ & 0.58 & 0.43 & 0.71 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{model-bertscore} Average BERTSCORE (F1) by sentence length
+}
+\end{table}
 
 \subsection{Embedding Experiments}
 
-
+In exploring the effects of various embedding representations on translation
+performance, we chose our Transformer model as the control as it performed the best,
+and swapped out its embedding layer for pre-trained embeddings, using BERT trained on our train set,
+as well as FastText embeddings trained on our train set.
 
 \section{Discussion}
 \section{Conclusion}
