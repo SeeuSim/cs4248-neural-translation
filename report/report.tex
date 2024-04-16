@@ -17,6 +17,9 @@
 % \usepackage[T5]{fontenc}
 % See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
 \usepackage[htt]{hyphenat}
+\usepackage{booktabs}
+\setlength{\heavyrulewidth}{1.5pt}
+\setlength{\abovetopsep}{4pt}
 
 % This assumes your files are encoded as UTF8
 \usepackage[utf8]{inputenc}
@@ -77,8 +80,17 @@ and fluency. Complementarily, BERTScore offers insights to paraphrased
 translations by computing similarity with contextualised token embeddings. 
 
 Our experimental analysis revealed that TER scores consistently mirrored the
-trends observed in BLEU-4 and BERTScore evaluations. In contrast, ROUGE and
-CHRF metrics exhibited limitations in the context of our translations,
+trends observed in BLEU-4\footnote[1]{
+
+}
+and BERTScore\footnote[2]{
+    
+} evaluations. In contrast, ROUGE\footnote[3]{
+
+} and
+CHRF\footnote[4]{
+
+} metrics exhibited limitations in the context of our translations,
 particularly when dealing with repetitive characters. ROUGE does not penalise
 repetition unless it impacts recall and precision relative to the reference,
 while CHRF, emphasising character n-gram precision and recall, can inflate
@@ -101,6 +113,121 @@ the English-Chinese translation task.
 \section{Related Work}
 \section{Corpus Analysis}
 \section{Experiments}
+
+To determine which methods for each subdomain produce the best translation
+results, we investigate the following research questions, and elaborate on the results in Section 5.
+
+\vspace{5pt} \noindent \textbf{RQ-1}: Between pre-trained word tokenisation
+algorithms, byte-pair encoding (BPE), and WordPiece models, which
+approach gives the best tokenisation performance of the dataset to give the
+best downstream translation result?
+
+\vspace{5pt} \noindent \textbf{RQ-2}: Would adding an alignment layer (slightly
+similar to an attention mechanism) to an RNN allow it to outperform LSTM and Transformer
+architectures?
+
+\vspace{5pt} \noindent \textbf{RQ-3}: Using context-based embeddings on a
+trained BERT embedding model, or short-context embeddings like FastText, would
+they improve the model’s output over a learned embedding layer? 
+
+\subsection{Tokenisation Experiments}
+
+For all the attempted tokenisation algorithms, we encode the split tokens to their index in the learned vocabulary, trained by tokenising the train dataset using the chosen tokenisation algorithm.
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*3c}
+\toprule
+\bf Type & \bf Config. & \bf Description \\
+\midrule
+\bf Word-based & 1 & Self-trained tokeniser \\ 
+& & based on word-based \\ 
+& & approach \\
+\midrule
+\bf BPE & 2 & Self-trained tokeniser \\
+& & based on SentencePiece \\
+& & BPE (for both \\
+& & languages)\\
+\midrule
+\bf WordPiece & 3 & Adapted tokeniser \\
+& & from pretrained models\\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{tokenisation-configs} Tokenisation Configurations and their descriptions
+}
+\end{table}
+
+We utilise the entire training set (231,266 rows) to generate the vocabulary
+for all these tokenisation configurations.
+
+For configuration 1, we used spaCy's en\_core\_web\_lg tokeniser component for
+English and stanza for Chinese. The vocabulary size from word-based
+tokenisation was 62,716 words/characters for English, and 101,686
+words/characters for Chinese.
+
+For configuration 2, given parameter size constraints for other model
+architectures, we limited the vocabulary size for our BPE tokenisers to 16,384
+symbols per language, including Unknown, Padding, EOS and BOS tokens.
+
+For configuration 3, we adapted popular pre-trained
+tokenisers on our dataset. We chose to work with the models from
+google-bert/bert-base-uncased and google-bert/bert-base-chinese for English and
+Chinese respectively. The original vocabulary sizes for bert-base-chinese and
+bert-base-uncased was 21,128 and 30,522 respectively.
+We set the limit for the new vocabulary size to
+32,000 for both languages to reduce resource utilisation for our models.
+
+We take the reference RNN-alignment model architecture from the following
+segment as the control for this experiment setup, varying only the input
+tokeniser and modifying the model’s embedding layer size to fit the vocabulary
+of the various tokenisers. We also restrict its training to the first 10,000
+rows of the train set, and report the results on the test set as follows:
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*4c}
+\toprule
+\bf Evaluation Metrics & \multicolumn{3}{c}{\bf Tokenisation Config.} \\
+% \midrule
+    & \bf 1 & \bf 2 & \bf 3 \\ 
+\midrule
+\bf BLEU-4 & 4.08 & 2.41 & 0.10 \\ 
+\bf BERT-R & 0.54 & 0.51 & 0.44 \\
+\bf BERT-P & 0.56 & 0.55 & 0.54 \\
+\bf BERT-F & 0.55 & 0.53 & 0.49 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{tokenisation-scores} Evaluation scores 
+    from baseline RNN with different 
+    tokenisation configurations, trained 
+    with subset of 10k rows from training set
+}
+\end{table}
+
+\subsection{Model Architecture Experiments}
+
+We utilised the baseline RNN with alignment mechanism from the previous section
+and compared it with reference LSTM architectures, and the baseline Transformer
+architecture. For all the model architectures, we train them on the entire
+training set for a maximum of 30 epochs, allowing for early stopping. 
+
+For this approach, we used the second best tokeniser (SentencePiece BPE) due to its
+smaller vocabulary size, shrinking the model architecture memory footprint to fit on
+our training device, a NVIDIA L4 GPU on Google Colab.
+
+As the transformer model is relatively deeper and more complex, we opt to use
+beam search with a beam width of 8 at each step to obtain the best translation
+output utilising the top-8 token probabilities at each step, as opposed to
+blindly taking the best token at each step with the greedy method.
+
+\subsection{Embedding Experiments}
+
+
+
 \section{Discussion}
 \section{Conclusion}
 
