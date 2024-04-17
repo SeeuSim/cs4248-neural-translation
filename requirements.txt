@@ -5,6 +5,7 @@ nltk
 tqdm
 transformers[torch]
 torch
+torchsummary
 torchtext
 ipykernel
 bert_score

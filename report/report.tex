@@ -16,6 +16,11 @@
 % For Vietnamese characters
 % \usepackage[T5]{fontenc}
 % See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
+\usepackage[htt]{hyphenat}
+\usepackage{booktabs}
+\setlength{\heavyrulewidth}{1.5pt}
+\setlength{\abovetopsep}{4pt}
+\usepackage{amsmath}
 
 % This assumes your files are encoded as UTF8
 \usepackage[utf8]{inputenc}
@@ -51,23 +56,322 @@
 
 \author{A0239298L, A0250934E, A0239754R, \\ \bf A0276597E, A0234622M, A0218236H \\
   Group 42 \\
-  Mentored by Naaman Tan \\
-  \texttt{\{e0773896,e0949099,e0774352,e1132330,e0726622,e0544272\}@u.nus.edu}}
+  Mentored by Tan Yong-Jia, Naaman \\
+  \texttt{\{e0773896,e0949099,e0774352,e1132330,}\\
+  \texttt{e0726622,e0544272\}@u.nus.edu}}
 
-\begin{document}
-\maketitle
+\begin{document} 
+\maketitle 
+
 \begin{abstract}
 
-Neural machine translation (NMT) has become the dominant approach for automated translation between languages in recent years. In this project, we attempt various key techniques taught in the module for text processing and representations, namely text tokenisation, embeddings, similarity, and machine learning. In exploring various approaches for each of these optimisations, we attempt to investigate which approaches perform better across the whole dataset, and on specific examples such as longer/shorter sentences to highlight the strengths/weaknesses of each approach.
+Neural machine translation (NMT) has become the dominant approach for automated
+translation between languages in recent years. In this project, we attempt
+various key techniques taught in the module for text processing and
+representations, namely text tokenisation, embeddings, similarity, and machine
+learning. In exploring various approaches for each of these optimisations, we
+attempt to investigate which approaches perform better across the whole
+dataset, and on specific examples such as longer/shorter sentences to highlight
+the strengths/weaknesses of each approach.
 
-We evaluate our model’s performance on standard English-Chinese translation benchmarks, specifically BLEU-4 and BERTScore. BLEU-4 looks at the alignment of n-grams, where n ranges from 1 to 4, emphasising on both translation precision and fluency. Complementarily, BERTScore offers insights to paraphrased translations by computing similarity with contextualised token embeddings. 
+We evaluate our model’s performance on standard English-Chinese translation
+benchmarks, specifically BLEU-4 and BERTScore. BLEU-4 looks at the alignment of
+n-grams, where n ranges from 1 to 4, emphasising on both translation precision
+and fluency. Complementarily, BERTScore offers insights to paraphrased
+translations by computing similarity with contextualised token embeddings. 
 
-Our experimental analysis revealed that TER scores consistently mirrored the trends observed in BLEU-4 and BERTScore evaluations. In contrast, ROUGE and CHRF metrics exhibited limitations in the context of our translations, particularly when dealing with repetitive characters. ROUGE does not penalise repetition unless it impacts recall and precision relative to the reference, while CHRF, emphasising character n-gram precision and recall, can inflate scores despite translations having limited character variety. This analysis was based on the average scores from model predictions trained on just 10,000 rows from the training set. Recognizing that ROUGE, TER, CHRF and CHRF++ have their merits, we opted to exclude them for clarity and explainability purposes. 
+Our experimental analysis revealed that TER scores consistently mirrored the
+trends observed in BLEU-4\footnote[1]{
 
-The results of this work confirm the effectiveness of our proposed techniques for building high-performing NMT systems capable of translating between languages such as English and Chinese. We believe that, if given sufficient compute resources and training data, a state-of-the-art (SOTA) model can be implemented using our best result implementations of tokenisation, model architecture and text embedding representations to achieve good performance in the English-Chinese translation task.
+}
+and BERTScore\footnote[2]{
+    
+} evaluations. In contrast, ROUGE\footnote[3]{
+
+} and
+CHRF\footnote[4]{
+
+} metrics exhibited limitations in the context of our translations,
+particularly when dealing with repetitive characters. ROUGE does not penalise
+repetition unless it impacts recall and precision relative to the reference,
+while CHRF, emphasising character n-gram precision and recall, can inflate
+scores despite translations having limited character variety. This analysis was
+based on the average scores from model predictions trained on just 10,000 rows
+from the training set. Recognizing that ROUGE, TER, CHRF and CHRF++ have their
+merits, we opted to exclude them for clarity and explainability purposes. 
+
+The results of this work confirm the effectiveness of our proposed techniques
+for building high-performing NMT systems capable of translating between
+languages such as English and Chinese. We believe that, if given sufficient
+compute resources and training data, a state-of-the-art (SOTA) model can be
+implemented using our best result implementations of tokenisation, model
+architecture and text embedding representations to achieve good performance in
+the English-Chinese translation task.
     
 \end{abstract}
 
+\section{Introduction}
+\section{Related Work}
+\section{Corpus Analysis}
+\section{Experiments}
+
+To determine which methods for each subdomain produce the best translation
+results, we investigate the following research questions, and elaborate on the results in Section 5.
+
+\vspace{5pt} \noindent \textbf{RQ-1}: Between pre-trained word tokenisation
+algorithms, byte-pair encoding (BPE), and WordPiece models, which
+approach gives the best tokenisation performance of the dataset to give the
+best downstream translation result?
+
+\vspace{5pt} \noindent \textbf{RQ-2}: Would adding an alignment layer (slightly
+similar to an attention mechanism) to an RNN allow it to outperform LSTM and Transformer
+architectures?
+
+\vspace{5pt} \noindent \textbf{RQ-3}: Using context-based embeddings on a
+trained BERT embedding model, or short-context embeddings like FastText, would
+they improve the model’s output over a learned embedding layer? 
+
+\subsection{Tokenisation Experiments}
+
+For all the attempted tokenisation algorithms, we encode the split tokens to their index in the learned vocabulary, trained by tokenising the train dataset using the chosen tokenisation algorithm.
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*3c}
+\toprule
+\bf Type & \bf Config. & \bf Description \\
+\midrule
+\bf Word-based & 1 & Self-trained tokeniser \\ 
+& & based on word-based \\ 
+& & approach \\
+\midrule
+\bf BPE & 2 & Self-trained tokeniser \\
+& & based on SentencePiece \\
+& & BPE (for both \\
+& & languages)\\
+\midrule
+\bf WordPiece & 3 & Adapted tokeniser \\
+& & from pretrained models\\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{tokenisation-configs} Tokenisation Configurations and their descriptions
+}
+\end{table}
+
+We utilise the entire training set (231,266 rows) to generate the vocabulary
+for all these tokenisation configurations.
+
+For configuration 1, we used spaCy's en\_core\_web\_lg tokeniser component for
+English and stanza for Chinese. The vocabulary size from word-based
+tokenisation was 62,716 words/characters for English, and 101,686
+words/characters for Chinese.
+
+For configuration 2, given parameter size constraints for other model
+architectures, we limited the vocabulary size for our BPE tokenisers to 16,384
+symbols per language, including Unknown, Padding, EOS and BOS tokens.
+
+For configuration 3, we adapted popular pre-trained
+tokenisers on our dataset. We chose to work with the models from
+google-bert/bert-base-uncased and google-bert/bert-base-chinese for English and
+Chinese respectively. The original vocabulary sizes for bert-base-chinese and
+bert-base-uncased was 21,128 and 30,522 respectively.
+We set the limit for the new vocabulary size to
+32,000 for both languages to reduce resource utilisation for our models.
+
+We take the reference RNN-alignment model architecture from the following
+segment as the control for this experiment setup, varying only the input
+tokeniser and modifying the model’s embedding layer size to fit the vocabulary
+of the various tokenisers. We also restrict its training to the first 10,000
+rows of the train set, and report the results on the test set as follows:
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*4c}
+\toprule
+\bf Evaluation Metrics & \multicolumn{3}{c}{\bf Tokenisation Config.} \\
+% \midrule
+    & \bf 1 & \bf 2 & \bf 3 \\ 
+\midrule
+\bf BLEU-4 & 4.08 & 2.41 & 0.10 \\ 
+\midrule
+\bf BERT-R & 0.54 & 0.51 & 0.44 \\
+\bf BERT-P & 0.56 & 0.55 & 0.54 \\
+\bf BERT-F & 0.55 & 0.53 & 0.49 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{tokenisation-scores} Evaluation scores 
+    from baseline RNN with different 
+    tokenisation configurations, trained 
+    with subset of 10k rows from training set
+}
+\end{table}
+
+\subsection{Model Architecture Experiments}
+
+We utilised the baseline RNN with alignment mechanism from the previous section
+and compared it with reference LSTM architectures, and the baseline Transformer
+architecture. For all the model architectures, we train them on the entire
+training set for a maximum of 30 epochs, allowing for early stopping. 
+
+For this approach, we used the second best tokeniser (SentencePiece BPE) due to its
+smaller vocabulary size, shrinking the model architecture memory footprint to fit on
+our training device, a NVIDIA L4 GPU on Google Colab.
+
+As the transformer model is relatively deeper and more complex, we opt to use
+beam search with a beam width of 8 at each step to obtain the best translation
+output utilising the top-8 token probabilities at each step, as opposed to
+blindly taking the best token at each step with the greedy method.
+
+\subsubsection{LSTM}
+
+For the LSTM model, we
+
+\subsubsection{Transformer}
+
+For the Transformer model, we use the reference architecture from the paper
+Attention Is All You Need, reducing the inner layer dimension to 256 and the
+feed forward network dimension to 1024 to fit the model in memory. 
+
+We also utilised the implementation from
+https://github.com/devjwsong/transformer-translator-pytorch and adapted it for
+use with our tokenisers.
+
+\subsubsection{RNN Implementation}
+
+we referenced the paper ‘Neural Machine Translation by Jointly Learning to
+Align and Translate’ (Bahdanau et al., 2014) to implement a more advanced RNN
+variant with alignment mechanism, which allowed the model to focus on only
+relevant parts of the input, addressing limitations observed with long
+sentences in basic encoder-decoder setups. 
+
+The implemented RNN variant uses a bidirectional RNN for input sentence
+processing, resulting in a set of annotations \(h_i\) encompassing contextual
+data from both directions. These annotations are derived from the concatenated
+forward \(\overrightarrow{h_i}\) and backward \(\overleftarrow{h_j}\)
+hidden states of each word in the input sentence:
+ 
+\[ h_i = [\overrightarrow{h_i}; \overleftarrow{h_i}] \] The encoder’s output
+and the hidden state of the decoder \(s_{t-1}\) is then fed into an attention
+mechanism, which computes an attention vector \(a_t\) by determining the
+weights of each annotation in the context of the current target word being
+predicted.
+
+\[ \alpha_{tj} = \frac{\exp(e_{tj})}{\sum_{k=1}^{T_x}\exp(e_{tk})} \]
+
+where \(e_{tj}\) is a compatibility score between the decoder's previous hidden
+state and the \(j\)-th annotation from the encoder, defined by:
+
+\[ e_{tj} = a(s_{t-1}, h_j) \]
+
+A context vector \(c_t\) is then created for each word in the target sequence
+as a weighted aggregate of these annotations, informed by their respective
+attention weights:
+
+\[ c_t = \sum_{j=1}^{T_x} \alpha_{tj}h_j \]
+
+The weighted context vectors are then utilised by the decoder to generate the
+translated words sequentially. With functions \(f\) and \(g\) representing the
+RNN decoder and output layer respectively, \(s_t\) denoted the dynamic state of
+the decoder at each stage of the translation process, and \(y_t\) denotes the
+generated output word at each time step, building up the translated sequence
+one word at a time. 
+
+\begin{align*}
+  s_t &= f(s_{t-1}, y_{t-1}, c_t) \\
+  y_t &= g(s_t, y_{t-1}, c_t)
+\end{align*}
+
+
+The model achieved its lowest validation loss after 8 epochs, with a learning rate of 1e-3.
+
+\subsubsection{Results}
+
+Training the models on the entire training set, we obtain the following results:
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*4c}
+\toprule
+\bf Evaluation Metrics & \bf RNN & \bf LSTM & \bf Transformer \\ 
+\midrule
+\bf BLEU-4 & 9.74 & 0.70 & 13.78 \\
+\midrule
+\bf BERT-R & 0.64 & 0.49 & 0.71 \\
+\bf BERT-P & 0.69 & 0.44 & 0.75 \\
+\bf BERT-F & 0.67 & 0.46 & 0.73 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{model-arch-scores}   Evaluation scores from selected architectures with
+  trained BPE tokeniser (config 2.) , trained on full training set
+}
+\end{table}
+
+Binning the individual scores by length and averaging them by bin, we get the following results:
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*4c}
+\toprule
+\bf Sentence & \multicolumn{3}{c}{\bf BLEU} \\
+% \midrule
+\bf Length (EN) & \bf RNN & \bf LSTM & \bf Transformer \\ 
+\midrule
+\bf 0-20 & 12.30 & 1.18 & 15.27 \\
+\bf 21-30 & 7.60 & 0.07 & 12.36 \\
+\bf 31-40 & 5.84 & 0.06 & 11.76 \\
+\bf 41-50 & 5.35 & 0.06 & 11.46 \\
+\bf 51-60 & 4.50 & 0.07 & 10.78 \\
+\bf 60+ & 3.31 & 0.07 & 9.71 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{model-bleu} Average BLEU Scores by Sentence Length
+}
+\end{table}
+
+
+
+
+\begin{table}[h]
+\begin{center}
+\begin{tabular}{*4c}
+\toprule
+\bf Sentence & \multicolumn{3}{c}{\bf BERTSCORE --- F1} \\
+% \midrule
+\bf Length (EN) & \bf RNN & \bf LSTM & \bf Transformer \\ 
+\midrule
+\bf 0-20 & 0.69 & 0.49 & 0.73 \\
+\bf 21-30 & 0.65 & 0.43 & 0.73 \\
+\bf 31-40 & 0.63 & 0.42 & 0.73 \\
+\bf 41-50 & 0.62 & 0.43 & 0.73 \\
+\bf 51-60 & 0.61 & 0.43 & 0.72 \\
+\bf 60+ & 0.58 & 0.43 & 0.71 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\caption{
+\label{model-bertscore} Average BERTSCORE (F1) by sentence length
+}
+\end{table}
+
+\subsection{Embedding Experiments}
+
+In exploring the effects of various embedding representations on translation
+performance, we chose our Transformer model as the control as it performed the best,
+and swapped out its embedding layer for pre-trained embeddings, using BERT trained on our train set,
+as well as FastText embeddings trained on our train set.
+
+\section{Discussion}
+\section{Conclusion}
+
+\newpage
 \section{Report Best Practices}
 \label{s:best}
 
