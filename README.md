@@ -49,7 +49,7 @@ We standardise training at 10,000 rows of the train dataset, while all tokeniser
 ## Members
 
 - Seeu Sim Ong [@SeeuSim](https://github.com/SeeuSim)
-- Jean Ong Hui Jia [@jeanong2](https://github.com/jeanong2)
+- Jean Ong Hui Fang [@jeanong2](https://github.com/jeanong2)
 - Cayden Chen Ningjia  [@caydencnj](https://github.com/caydencnj)
 - Lian Kok Hai [@unfazing](https://github.com/unfazing)
 - Glen Lim Fu Yong [@glyfy](https://github.com/glyfy)
