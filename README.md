@@ -53,4 +53,4 @@ We standardise training at 10,000 rows of the train dataset, while all tokeniser
 - Cayden Chen Ningjia  [@caydencnj](https://github.com/caydencnj)
 - Lian Kok Hai [@unfazing](https://github.com/unfazing)
 - Glen Lim Fu Yong [@glyfy](https://github.com/glyfy)
-
+- Kelvin Soo [@KelvinSoo](https://github.com/KelvinSoo)
