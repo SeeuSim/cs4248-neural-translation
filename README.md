@@ -35,7 +35,7 @@ For Tokenisation, we evaluated three Tokenisation approaches, namely:
   
     The notebook can be found [here](models/rnn/baseline-rnn-config-3.ipynb).
 
-    Using the HuggingFace Tokeniser Finetuning [API](models/rnn/baseline-rnn-config-2.ipynb), we train two tokenisers
+    Using the HuggingFace Tokeniser Finetuning [API](https://huggingface.co/docs/transformers/main_classes/tokenizer#transformers.PreTrainedTokenizerFast.train_new_from_iterator), we train two tokenisers
     on our training dataset, from the configurations listed below:
 
     - English: `bert_base_uncased`: This outputs a vocabulary size of 32,000, from the original 30,522.
